@@ -8,7 +8,7 @@
 # Flags:
 #   --no-seed     Não executa `bun run db:seed` no api-auth após o up.
 #
-# 1.ª execução típica: se deploy/.env não existir, copia deploy/env.prod.example,
+# 1.ª execução típica: se deploy/.env não existir, copia deploy/.env.example,
 #     imprime instruções e termina com código 1 — edite as variáveis e volte a correr este script.
 
 set -euo pipefail
@@ -16,7 +16,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/deploy/docker-compose.prod.yml"
-EXAMPLE_ENV="$REPO_ROOT/deploy/env.prod.example"
+EXAMPLE_ENV="$REPO_ROOT/deploy/.env.example"
 ENV_FILE="${REPO_ROOT}/deploy/.env"
 RUN_SEED=1
 extra=()
@@ -117,7 +117,7 @@ fi
 
 if [[ "$RUN_SEED" -eq 1 ]]; then
   echo "==> Seed da base (api-auth) — idempotente (onConflictDoNothing no email)…"
-  docker compose -f deploy/docker-compose.prod.yml --env-file "$ENV_FILE" exec -T api-auth bun run db:seed
+  docker compose -f "$REPO_ROOT/deploy/docker-compose.prod.yml" --env-file "$REPO_ROOT/deploy/.env" exec -T api-auth bun run db:seed
   echo "==> Seed concluído."
 else
   echo "==> Seed ignorado (--no-seed)."
