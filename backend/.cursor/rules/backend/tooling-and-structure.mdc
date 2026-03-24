@@ -1,0 +1,37 @@
+---
+description: Estrutura de diretórios modular (Bun, /modules, /shared).
+globs: ["backend/**"]
+alwaysApply: false
+---
+# Tooling e Estrutura de Diretórios Modular (Backend)
+
+- **Bun:** O gerenciador de pacotes oficial é o **Bun**. A IA NUNCA deve sugerir `npm` ou `yarn`. Use `bun add`.
+- **Typecheck e Lint:** O código gerado deve passar no ESLint/Biome sem erros de TypeScript (`any` é proibido).
+
+## Padrão de Diretórios (Modular / Feature-First)
+O sistema é estritamente dividido por **Domínios de Negócio (Módulos)**. A IA NUNCA deve agrupar arquivos por tipo globalmente (ex: pasta `controllers` global). 
+
+Cada nova funcionalidade DEVE ter seu próprio diretório isolado dentro de `/src/modules/`.
+
+```text
+/src
+  /modules                  # Cada pasta aqui é um Domínio ISOLADO do sistema
+    
+    /auth                   # Exemplo: Módulo de Autenticação
+      /controllers          # auth.controller.ts (Login, Recuperação de Senha, Registro)
+      /services             # authenticate-user.service.ts, reset-password.service.ts
+      /repositories         # user.repository.ts (Acesso ao banco para dados de usuário)
+      /schemas              # auth.schema.ts (Validação Zod de email/senha)
+      auth.routes.ts        # Rotas exclusivas de autenticação
+    
+    /tenants                # Exemplo: Módulo de gestão de clientes (Master DB)
+      /controllers
+      /services
+      /repositories
+      tenant.routes.ts
+      
+  /shared                   # Tudo o que é transversal e compartilhado
+    /infra                  # Configurações de Banco (Master/Tenant), Logger
+    /middlewares            # Middlewares globais (Auth Guard, Error Handler)
+    /utils                  # Funções utilitárias puras
+    /errors                 # Classes de erro (AppError)

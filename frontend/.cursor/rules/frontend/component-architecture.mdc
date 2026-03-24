@@ -1,0 +1,53 @@
+---
+description: Arquitetura de UI escalável em 3 camadas: Primitivos, Componentes Presentacionais (Burros) e Orquestradores.
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Arquitetura de Componentes React e UI Escalável
+
+Este projeto adota uma arquitetura de UI estrita dividida em 3 camadas para garantir a escalabilidade e reaproveitamento do Design System. A IA DEVE separar a lógica de negócio (estado/API) da renderização visual.
+
+## As 3 Camadas da UI
+
+### 1. Primitivos de UI (Componentes Base)
+- **O que são:** Os blocos de montar mais básicos (ex: `Button`, `Input`, `Card`). Geralmente são *wrappers* em volta dos componentes que temos estilizados com Tailwind.
+- **Regras:** 100% visuais. NUNCA possuem estado global, requisições API ou regras de negócio.
+  - Recebem apenas `props` primitivas (`string`, `boolean`, `onClick`).
+  - Localização: `/src/components/ui/`
+
+### 2. Componentes Presentacionais (Burros / Dumb)
+- **O que são:** Composições de primitivos formando blocos maiores (ex: `LoginFormUI`, `UserProfileCard`, `DataTableAgents`).
+- **Regras:**
+  - Focados em COMO as coisas se parecem.
+  - Recebem os dados crus via `props` (ex: `user={userData}`) e emitem eventos via callbacks (ex: `onSubmit={handleSubmit}`).
+  - NUNCA chamam APIs (`useQuery`) ou gerenciam estado global (`Zustand`). Podem ter estado local simples para UI (ex: `isOpen` de um dropdown).
+  - Localização: `/src/components/features/[feature-name]/` ou `/src/components/screens/`
+
+### 3. Orquestração (Smart Components / Containers)
+- **O que são:** As páginas ou *Containers* que gerenciam a lógica real (ex: `LoginPage`, `AgentDashboardContainer`).
+- **Regras:**
+  - Focados em COMO as coisas funcionam.
+  - Quase não possuem HTML/Tailwind. O trabalho deles é chamar Hooks de API, gerenciar o Zustand, validar formulários complexos e passar os dados mastigados como `props` para os Componentes Presentacionais.
+  - Localização: `/src/pages/` ou `/src/components/features/[feature-name]/containers/`
+
+## Exemplo de Aplicação (Orquestração Fora da UI)
+
+### Ruim (Misturado)
+```tsx
+// ❌ O componente visual sabe demais (chama a API e gerencia estado diretamente)
+export function LoginForm() {
+  const { mutate } = useLoginApi(); // Lógica misturada na UI
+  return <form onSubmit={mutate}><input /></form>;
+}
+```
+
+## Checklist rápido (pilares)
+
+| Pilar | Onde | Critério |
+|-------|------|----------|
+| **Primitivos** | `components/ui/` | Só aparência; props simples; sem API/store. |
+| **Presentacional** | `components/screens/…` | Dados e erros por **props**; emite **`onSubmit` / `onValueChange`** / callbacks; estado local só para UI (ex.: popover aberto). |
+| **Orquestração** | `pages/`, containers | Hooks, API, Zustand, Zod; passa dados mastigados para a UI. |
+| **Unidirecional** | Formulários | Container valida (ex.: Zod) → **`fieldErrors`** descem como props; valor sobe com **`onValueChange`** quando aplicável. |
+
+**Exemplos no repo:** `ActionBar` (props + `actions` como slot), `ClientFormUI` / `ClientUserFormUI` (burros), páginas em `src/pages/app/*` (orquestração; mocks até existir API).

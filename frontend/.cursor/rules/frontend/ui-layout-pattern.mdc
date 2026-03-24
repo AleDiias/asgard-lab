@@ -1,0 +1,91 @@
+---
+description: Padrões de construção de UI e Layout utilizando shadcn integrado com Tailwind CSS
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de UI e Layout (shadcn + Tailwind CSS)
+
+Este projeto utiliza o shadcn como base de componentes interativos e Tailwind CSS como motor exclusivo de estilização e layout. A IA deve priorizar a produtividade e consistência, combinando o melhor das duas ferramentas.
+
+## Regras Fundamentais de UI
+- **Priorize o shadcn:** NUNCA construa um componente complexo do zero (ex: Tabela, Dropdown, Calendário, Accordion) se o shadcn já oferecer um equivalente.
+- **Estilização Exclusiva com Tailwind:** NUNCA escreva CSS customizado. Todo espaçamento, tipografia, cor e layout deve ser feito via classes utilitárias do Tailwind.
+
+## Padrões de Layout Estrutural
+- Para estruturar a página (grids, colunas, alinhamentos, espaçamentos entre componentes), utilize exclusivamente as classes de Flexbox e Grid do Tailwind CSS nas tags HTML semânticas ou em `<div>`.
+- Não utilize componentes de layout legados ou de terceiros se o Tailwind resolve de forma nativa e mais limpa.
+
+## Integração shadcn + Tailwind
+O shadcn permite estilização profunda. A IA deve seguir estas abordagens ao customizar componentes:
+
+1. **Estilização de Contêiner (className):**
+   Utilize a propriedade `className` padrão para margins, larguras, e posicionamento do componente inteiro.
+   
+2. **Partes do componente (`className` em slots):**
+   Em tabelas, diálogos, dropdowns etc., estilize cabeçalhos, células e triggers com `className` nos subcomponentes exportados (`TableHead`, `DialogTitle`, …), evitando CSS solto.
+
+3. **Mesclagem Segura:** Se houver lógicas condicionais de estilo, utilize o utilitário `cn()` (que combina `clsx` e `tailwind-merge`) para evitar conflitos de classes do Tailwind.
+
+## Exemplo de Estrutura Padrão
+
+```tsx
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface UserData {
+  id: string;
+  name: string;
+  status: "active" | "inactive";
+}
+
+export function UserList() {
+  const [users] = useState<UserData[]>([]);
+
+  return (
+    <section className="flex flex-col gap-6 rounded-xl bg-card p-6 shadow-sm">
+      <header className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold text-foreground">Usuários do Sistema</h2>
+        <Button type="button">Novo usuário</Button>
+      </header>
+
+      {users.length === 0 ? (
+        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          Nenhum usuário encontrado.
+        </p>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead>Nome</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((row) => (
+                <TableRow key={row.id} className="even:bg-muted/20">
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={row.status === "active" ? "default" : "secondary"}>
+                      {row.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </section>
+  );
+}
+```

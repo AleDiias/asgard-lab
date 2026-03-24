@@ -1,0 +1,68 @@
+---
+description: Padrões para testes unitários, de integração e E2E, focando em comportamento (RTL) e simulação de APIs
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Testes (Testing)
+
+Este projeto valoriza a confiabilidade. A IA deve gerar testes que garantam o funcionamento dos fluxos críticos de negócio, focando no comportamento do usuário e não nos detalhes de implementação do código.
+
+## Stack de Testes Padrão
+- **Unitários e Integração:** Vitest (ou Jest) + React Testing Library (RTL).
+- **E2E (Ponta a Ponta):** Playwright (ou Cypress).
+- **Mocks de Rede:** Mock Service Worker (MSW) para interceptar chamadas de API.
+
+## Regras de Ouro (React Testing Library)
+- **Teste o Comportamento, não a Implementação:** Não teste se um estado interno (ex: Zustand) mudou. Teste se, ao clicar no botão, a interface exibiu o resultado esperado ou chamou a função correta.
+- **Priorize Queries Acessíveis:** SEMPRE busque elementos pela forma como o usuário os percebe. A ordem de prioridade deve ser:
+  1. `getByRole` (ex: `screen.getByRole('button', { name: /atender/i })`)
+  2. `getByText` / `getByLabelText`
+  3. Evite usar `getByTestId` a menos que seja estritamente necessário (ex: gráficos ou animações complexas).
+- **Estrutura AAA:** Organize os testes no formato **Arrange** (preparar o cenário/mocks), **Act** (renderizar e interagir com cliques/digitação) e **Assert** (validar o resultado no DOM).
+
+## Mocks e Contexto
+- **APIs:** NUNCA faça requisições HTTP reais em testes unitários. Utilize o MSW para simular o retorno das APIs ou faça mock do *Custom Hook* (ex: `useAgentMetrics`).
+- **Providers:** Ao testar componentes que dependem de Contextos (Tema, Workspace, Autenticação) ou Traduções (i18n), SEMPRE envolva a renderização em um componente utilitário genérico (ex: `renderWithProviders()`).
+
+## Exemplo de Estrutura Padrão (Unitário/Integração)
+
+```tsx
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi, describe, it, expect } from 'vitest';
+import { DialerButton } from './DialerButton';
+// Mock do hook de requisição (definido em api-pattern)
+import { useAgentCall } from '@/hooks/use-agent-call';
+
+// Mockando o módulo da API
+vi.mock('@/hooks/use-agent-call');
+
+describe('DialerButton', () => {
+  it('deve exibir estado de carregamento e chamar a API ao clicar em Iniciar Chamada', async () => {
+    // Arrange: Preparar o mock da ação de discagem
+    const mockInitiateCall = vi.fn().mockResolvedValue({ success: true });
+    (useAgentCall as any).mockReturnValue({
+      initiateCall: mockInitiateCall,
+      isDialing: false,
+    });
+
+    const user = userEvent.setup();
+    
+    // Act: Renderizar com providers (i18n, tema, etc)
+    render(<DialerButton phoneNumber="11999999999" />);
+    
+    const button = screen.getByRole('button', { name: /iniciar chamada/i });
+    expect(button).toBeInTheDocument();
+
+    // Act: Interação do usuário
+    await user.click(button);
+
+    // Assert: Validar se a função foi chamada com o número correto
+    expect(mockInitiateCall).toHaveBeenCalledWith('11999999999');
+    
+    // Assert: Validar mudança de acessibilidade e feedback visual
+    await waitFor(() => {
+      expect(button).toHaveAttribute('aria-busy', 'true');
+    });
+  });
+});

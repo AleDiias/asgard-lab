@@ -1,0 +1,23 @@
+---
+description: Database-per-Tenant, conexões dinâmicas e migrations.
+globs: ["backend/**"]
+alwaysApply: false
+---
+
+# Padrões de Banco de Dados Multi-Tenant e Migrations
+
+O sistema utiliza um servidor PostgreSQL (via Docker), mas a arquitetura é **Database-per-Tenant**.
+
+## 1. Estrutura de Bancos
+- **Master DB (`asgard_master`):** Banco central que armazena a lista de clientes, credenciais globais e configurações de infraestrutura.
+- **Tenant DBs (`client_empresaA`, `client_empresaB`):** Bancos gerados dinamicamente para cada cliente. Armazenam os dados operacionais (agentes, chamadas, campanhas).
+
+## 2. Conexões Dinâmicas e Criação
+- NUNCA utilize uma única conexão de banco em rotas operacionais.
+- Quando a rota administrativa criar um cliente, o sistema DEVE executar programaticamente um comando de provisionamento (ex: `CREATE DATABASE client_nome;`).
+- O sistema DEVE manter um gerenciador de conexões em cache (Connection Pool Manager) para evitar abrir e fechar conexões a cada requisição.
+
+## 3. Migrations (Regra Inquebrável)
+- **NENHUMA** alteração de banco (criar tabelas, adicionar colunas, criar índices) pode ser feita via script SQL solto. TUDO deve ser feito via **Migrations** (usando a ferramenta configurada: Prisma, Knex, Drizzle ou node-pg-migrate).
+- Ao rodar uma migration do Master, ela roda apenas no banco `asgard_master`.
+- Ao rodar uma migration de Tenant, o script DEVE iterar sobre todos os clientes cadastrados no Master DB e aplicar a alteração em cada um dos bancos dinâmicos de forma transacional.

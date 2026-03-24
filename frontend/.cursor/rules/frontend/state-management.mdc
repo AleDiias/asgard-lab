@@ -1,0 +1,48 @@
+---
+description: Padrões para gerenciamento de estado global, UI e separação de responsabilidades no React
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Gerenciamento de Estado (State Management)
+
+A performance e a previsibilidade da UI são fundamentais. O gerenciamento de estado deve ser estritamente organizado para evitar renderizações desnecessárias e manter a lógica de negócio separada da camada de apresentação.
+
+## Regras de Ouro
+- **Estado de Servidor vs. Estado de Cliente:** - NUNCA armazene dados provenientes da API (ex: lista de campanhas, histórico de chamadas) no estado global do cliente (Zustand/Redux). Para isso, utilize a biblioteca de *Data Fetching* (ex: React Query, SWR) conforme definido em `api-pattern.mdc`.
+  - O estado global (Stores) deve ser reservado EXCLUSIVAMENTE para o estado da interface (UI) ou dados puramente do cliente (ex: abas ativas, tema claro/escuro, status de um discador webRTC em memória, controle de modais abertos).
+
+## Padrões de Criação de Stores (Zustand / Global State)
+- **Granularidade:** Prefira múltiplas *stores* pequenas e focadas (ex: `ui-store.ts`, `agent-status-store.ts`) ao invés de uma única e gigantesca *store* monolítica.
+- **Imutabilidade:** NUNCA modifique o estado diretamente. Utilize sempre as funções de atualização (`set`) fornecidas pela biblioteca.
+- **Ações Separdas:** Agrupe as ações (funções que alteram o estado) dentro da própria store, mantendo a lógica de transição de estado fora dos componentes React.
+
+## Exemplo de Estrutura Padrão (Zustand)
+
+```typescript
+// store/agent-status-store.ts
+import { create } from 'zustand';
+
+// 1. Tipagem clara do estado e das ações
+interface AgentStatusState {
+  isDialerActive: boolean;
+  currentCallId: string | null;
+  activeTab: 'script' | 'history' | 'profile';
+  
+  // Ações
+  toggleDialer: () => void;
+  setCurrentCall: (callId: string | null) => void;
+  setActiveTab: (tab: 'script' | 'history' | 'profile') => void;
+}
+
+// 2. Criação da Store
+export const useAgentStatusStore = create<AgentStatusState>((set) => ({
+  isDialerActive: false,
+  currentCallId: null,
+  activeTab: 'script',
+
+  toggleDialer: () => set((state) => ({ isDialerActive: !state.isDialerActive })),
+  
+  setCurrentCall: (callId) => set({ currentCallId: callId }),
+  
+  setActiveTab: (tab) => set({ activeTab: tab }),
+}));

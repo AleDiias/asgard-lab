@@ -1,0 +1,47 @@
+---
+description: Regras para internacionalização (i18n) e estruturação de chaves de tradução no projeto React
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Internacionalização (i18n)
+
+Este projeto foi desenhado para ser global e escalável. O suporte a múltiplos idiomas é obrigatório. Segue estritamente as regras abaixo ao gerar componentes visuais ou mensagens de retorno.
+
+## Regras de Ouro
+- **NUNCA** insiras texto estático (hardcoded) diretamente nos ficheiros `.tsx` ou `.jsx`.
+- **SEMPRE** utiliza o hook ou a função de tradução padrão do projeto (ex: `useTranslation()` do `react-i18next` ou equivalente).
+- **NUNCA** concatenes strings para formar frases traduzidas. Utiliza sempre o sistema de interpolação do i18n.
+
+## Padrão de Nomenclatura das Chaves (Translation Keys)
+
+As chaves de tradução devem seguir uma estrutura hierárquica clara para facilitar a manutenção e o contexto, utilizando `camelCase` para as chaves e agrupadas por blocos semânticos.
+
+**Estrutura recomendada:** `[contexto/módulo].[componente].[ação/elemento]`
+
+### Exemplos de Chaves
+- **Correto:** `crm.dashboard.welcomeMessage`
+- **Incorreto:** `WelcomeMessage` ou `crmDashboardWelcome`
+
+- **Correto:** `callCenter.agent.statusActive`
+- **Incorreto:** `agent_active` ou `active`
+
+- **Correto:** `common.button.save` ou `common.button.cancel`
+- **Incorreto:** `save_button` ou `btn_cancelar`
+
+## Interpolação e Pluralização
+
+Ao lidar com dados dinâmicos ou contagens, confia nos recursos nativos da biblioteca de i18n em vez de lógica JavaScript condicional na UI.
+
+### Variáveis
+- **Faz:** `"welcomeUser": "Olá, {{name}}! Bem-vindo ao sistema."` -> `t('welcomeUser', { name: userName })`
+- **Não Faz:** `t('hello') + ' ' + userName + '! ' + t('welcome')`
+
+### Plurais
+Usa os sufixos padrão de pluralização suportados pela biblioteca (como `_zero`, `_one`, `_other` no i18next).
+- **Exemplo JSON:**
+  ```json
+  {
+    "activeCalls_zero": "Nenhuma chamada ativa",
+    "activeCalls_one": "{{count}} chamada ativa",
+    "activeCalls_other": "{{count}} chamadas ativas"
+  }

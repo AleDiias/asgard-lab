@@ -1,0 +1,24 @@
+---
+description: Autenticação JWT com injeção de Tenant ID, Permissões Granulares (RBAC Avançado) e privilégios de Super Admin (@asgardai.com.br).
+globs: ["backend/**"]
+alwaysApply: false
+---
+# Segurança, Autenticação JWT e Permissões Granulares
+
+## 1. Token Multi-Contexto e Segurança
+- **Payload do JWT:** O token DEVE conter o identificador do cliente (`tenantName` ou `tenantId`), o ID do usuário, o seu e-mail, o seu perfil base (Role) e o array de permissões (`permissions`).
+- **Injeção de Dependência:** O middleware de autenticação (`requireAuth`) é o responsável por extrair o token, validá-lo e injetar os dados em `req.user` (incluindo o `tenantName`). Se o tenant não estiver no token, a requisição deve ser abortada com `401 Unauthorized`.
+- **Hash de Senhas:** Senhas devem ser salvas e comparadas com bcrypt/argon2. NUNCA trafegue senhas em texto plano.
+
+## 2. Permissões Granulares (Controle de Acesso)
+- **Validação por Ação:** A API DEVE validar permissões específicas da ação utilizando um middleware como `requirePermission(['nome_da_permissao'])`. Bloqueie o acesso retornando `403 Forbidden` caso a permissão não seja encontrada.
+- **Delegação de Acesso Limitada:** Ao criar ou editar os acessos de um usuário do cliente, o sistema deve garantir que o criador só possa conceder opções de permissões que ele próprio já possui.
+- **Perfis de Acesso (Legado/Agrupamento):** Middlewares de role (`requireRole`) ainda podem ser usados para diferenciar escopos largos (ex: rotas que apenas o `admin` do tenant acessa), mas a preferência para ações internas do CRM é a validação granular.
+
+## 3. Privilégios de Super Admin e Usuários Master (AsgardAI)
+- **Isolamento de Banco de Dados:** Usuários da equipe AsgardAI (emails `@asgardai.com.br`) NUNCA são cadastrados nos bancos de dados dos clientes (Tenant DBs). Eles existem EXCLUSIVAMENTE em uma tabela `asgard_users` (ou similar) localizada no **Master DB**.
+- **Fluxo de Autenticação Duplo:** 1. Durante o Login, o Service DEVE verificar o domínio do email.
+  2. Se for `@asgardai.com.br`, a API conecta no **Master DB**, valida a senha na tabela `asgard_users` e gera um JWT com a flag `isSuperAdmin: true`.
+  3. Se for um email comum, a API conecta no **Tenant DB** (baseado no subdomínio da requisição), valida a senha na tabela `users` do cliente e gera um JWT padrão.
+- **Bypass de Permissões:** O middleware de autorização (`requirePermission` e `requireRole`) DEVE sempre aprovar e liberar o acesso automaticamente se o token possuir a flag `isSuperAdmin: true`, permitindo que o funcionário atue em qualquer cliente sem precisar existir na tabela de usuários daquele cliente.
+- **Inativação Global:** Se o status de um usuário na tabela `asgard_users` do Master DB for alterado para inativo, qualquer tentativa de login ou renovação de token dele deve ser negada imediatamente.

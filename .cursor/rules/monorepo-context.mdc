@@ -1,0 +1,14 @@
+---
+description: Contexto do monorepo Asgard CRM — regras por pasta (backend / frontend).
+globs: []
+alwaysApply: true
+---
+
+# Regras do projeto Asgard CRM
+
+Este repositório é um monorepo com duas áreas de regras Cursor:
+
+- **backend**: regras em `.cursor/rules/backend/` (arquitetura, API, banco, auth, erros, tooling). Aplicam-se ao editar qualquer arquivo em `backend/`.
+- **frontend**: regras em `.cursor/rules/frontend/` (componentes, estado, roteamento, i18n, testes, Storybook, etc.). Aplicam-se ao editar qualquer arquivo em `frontend/`.
+
+Ao sugerir ou gerar código, use **sempre** as regras da pasta correspondente ao arquivo ou feature em que está a trabalhar. As rules são carregadas automaticamente pelo Cursor com base no caminho do ficheiro (globs `backend/**` e `frontend/**`).

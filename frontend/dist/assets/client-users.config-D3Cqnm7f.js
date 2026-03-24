@@ -1,0 +1,1 @@
+const s={list:"/app/users",newUser:"/app/users/new"},e={list:{title:"Usuários",breadcrumb:[{label:"Configurações"},{label:"Usuários"}]},newUser:{title:"Novo usuário",breadcrumb:[{label:"Configurações"},{label:"Usuários",to:"/app/users"},{label:"Novo usuário"}]}};export{s as C,e as c};

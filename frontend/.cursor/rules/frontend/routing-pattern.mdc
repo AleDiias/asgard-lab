@@ -1,0 +1,50 @@
+---
+description: Padrões de roteamento, layouts aninhados, proteção de rotas (Auth/Roles) e Lazy Loading no React
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Roteamento (Routing) e Proteção de Páginas
+
+Este projeto utiliza um sistema de rotas centralizado e protegido. A IA deve garantir que a navegação seja segura (verificando autenticação e permissões), performática (usando lazy loading) e que a interface compartilhe componentes estruturais corretamente através de *Layouts*.
+
+## Regras de Organização
+- **Separação de Preocupações:** - **`/pages` ou `/features`:** Contém as telas completas (ex: `DashboardPage.tsx`, `ActiveCallsPage.tsx`).
+  - **`/layouts`:** Contém os "esqueletos" da interface (ex: `AuthLayout.tsx` para login, `AdminLayout.tsx` com sidebar e header para o sistema logado).
+  - **`/routes`:** Contém a configuração central do router e os *wrappers* de proteção.
+
+## Proteção de Rotas e Permissões (Guards)
+- NUNCA exponha uma página interna diretamente no roteador sem envolvê-la em um componente de proteção (ex: `<ProtectedRoute>`).
+- O componente de proteção deve verificar tanto a **autenticação** (o usuário está logado?) quanto a **autorização** (o usuário tem a *role* necessária, como 'agent' ou 'supervisor'?).
+- Redirecione usuários não autenticados para `/login` e usuários sem permissão para uma página de `NotAuthorized` ou para o `/dashboard` padrão deles.
+
+## Performance (Lazy Loading)
+- TODAS as páginas principais DEVEM ser importadas dinamicamente usando `React.lazy()` ou o padrão de *lazy routing* da biblioteca de rotas. Isso evita que o bundle inicial do JavaScript fique gigante.
+- SEMPRE envolva as rotas lazy com um `<Suspense fallback={<LoadingSpinner />}>` no nível do layout ou da raiz.
+
+## Exemplo de Estrutura Padrão (React Router v6+)
+
+### 1. Componente de Proteção (`routes/ProtectedRoute.tsx`)
+```tsx
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth-context';
+
+export interface ProtectedRouteProps {
+  allowedRoles?: Array<'admin' | 'supervisor' | 'agent'>;
+}
+
+export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Renderiza as rotas filhas se passar nas validações
+  return <Outlet />;
+}

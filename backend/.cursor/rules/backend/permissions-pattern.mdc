@@ -1,0 +1,11 @@
+---
+description: RBAC com permissões granulares, wildcard * e Super Admin.
+globs: ["backend/**"]
+alwaysApply: false
+---
+
+# Padrão de permissões (API)
+
+- Use constantes em `src/constants/permissions.ts` (ex.: `users.manage`) para rotas de gestão de utilizadores do tenant.
+- Middleware `requirePermission`: Super Admin (`isSuperAdmin`) e wildcard `*` nas permissões do JWT liberam a rota.
+- Ao alterar permissões de outro utilizador, o serviço deve garantir que o ator só conceda permissões que já possui (exceto Super Admin). Ver `tenant-user-management.service.ts`.

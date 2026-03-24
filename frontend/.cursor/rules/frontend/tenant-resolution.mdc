@@ -1,0 +1,19 @@
+---
+description: Resolução de Multi-Tenant via Subdomínio, roteamento dinâmico e injeção de Headers na API.
+globs: ["frontend/**"]
+---
+# Resolução de Tenant e Super Admins (Frontend)
+
+O sistema é um SaaS único (Single Application). A identificação do cliente é feita via subdomínio, e privilégios administrativos globais (AsgardAI) são concedidos via domínio de e-mail.
+
+## 1. Identificação Dinâmica (Subdomínio)
+- Crie funções utilitárias em `/src/utils/tenant-helper.ts` para extrair o subdomínio de `window.location.hostname`.
+- O subdomínio extraído DEVE ser injetado globalmente na instância do cliente HTTP (Axios/Fetch) através de um Header customizado (ex: `X-Tenant-Domain: machado`).
+- NUNCA passe o nome do tenant no corpo (body) de cada requisição.
+
+## 2. Privilégios de Super Admin (God Mode)
+- **NÃO EXISTE** um painel administrativo separado. Todos usam o mesmo frontend.
+- A liberação de menus, botões ou telas de gestão global (ex: "Criar Novo Cliente") DEVE ser condicionada a uma verificação no Contexto de Autenticação: `user.email.endsWith('@asgardai.com.br')` ou através de uma flag `isSuperAdmin` retornada pela API.
+
+## 3. Identidade Visual Única
+- NUNCA crie lógicas para aplicar cores ou logotipos customizados por cliente. A interface padrão do sistema prevalece para todos os subdomínios.

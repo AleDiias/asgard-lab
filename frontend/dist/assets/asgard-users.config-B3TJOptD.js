@@ -1,0 +1,1 @@
+const e={list:"/app/admin/asgard-users",newMember:"/app/admin/asgard-users/new"},a={list:{title:"Equipe Asgard",breadcrumb:[{label:"Configurações"},{label:"Equipe Asgard"}]},newMember:{title:"Novo membro da equipe Asgard",breadcrumb:[{label:"Configurações"},{label:"Equipe Asgard",to:"/app/admin/asgard-users"},{label:"Novo membro"}]}};export{e as A,a};

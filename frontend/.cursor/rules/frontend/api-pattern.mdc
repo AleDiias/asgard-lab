@@ -1,0 +1,38 @@
+---
+description: Padrões de requisição HTTP, consumo de APIs, tipagem de dados e tratamento de erros
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Comunicação com API e Data Fetching
+
+Este projeto exige uma separação estrita entre a camada de UI e a camada de rede (API). A IA deve gerar código de requisição que seja tipado, centralizado e resiliente a erros.
+
+## Regras Fundamentais
+- **NUNCA** faça chamadas HTTP (usando `fetch`, `axios`, etc.) diretamente dentro de um componente React (`.tsx`).
+- **SEMPRE** isole as chamadas de API em arquivos dedicados dentro do diretório `/api` ou `/services` (ex: `agent-api.ts`, `campaign-service.ts`).
+- **SEMPRE** crie *Custom Hooks* (ex: `/hooks/use-agent-metrics.ts`) para consumir essas APIs nos componentes, preferencialmente utilizando bibliotecas de gerenciamento de estado de servidor (como TanStack Query / React Query ou SWR), caso estejam configuradas no projeto.
+
+## Tipagem Rigorosa (TypeScript)
+- Todas as requisições (Payloads) e respostas (Responses) DEVEM ter interfaces TypeScript correspondentes no diretório `/types`.
+- Evite tipar as respostas como `any`. Se o formato exato for desconhecido, use `unknown` e faça a validação dos dados.
+
+## Tratamento de Erros e Cliente Centralizado
+- Utilize um cliente HTTP centralizado (ex: uma instância configurada do Axios ou um *wrapper* customizado do Fetch) que já contenha interceptadores para lidar com tokens de autenticação (JWT) e tratamento global de erros (ex: redirecionar no erro 401).
+
+## Exemplo de Estrutura Padrão
+
+### 1. Tipagem (`types/telecom.ts`)
+```typescript
+export interface AgentMetricsResponse {
+  agentId: string;
+  activeCalls: number;
+  averageTalkTime: number;
+  status: 'available' | 'in-call' | 'paused';
+}
+
+### O que isto resolve:
+Ao fornecer esse contexto, quando você pedir "Crie uma tabela para listar o histórico de chamadas", o Cursor não vai apenas jogar um `useEffect` com um `fetch` no meio do componente. Ele vai criar a tipagem correta, o arquivo de API separado, o Hook de consumo e, finalmente, a tabela renderizando os dados limpos e traduzidos.
+
+Temos uma base muito sólida agora: Nomenclatura, i18n, Arquitetura de UI e Comunicação com API. 
+
+Para fechar o pacote essencial, o que acha de definirmos o `state-management.mdc` (para regras de estado global como Zustand, Redux ou Context API), ou você prefere focar em regras de testes criando o `testing-pattern.mdc`?

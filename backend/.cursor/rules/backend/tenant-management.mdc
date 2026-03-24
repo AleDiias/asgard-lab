@@ -1,0 +1,21 @@
+---
+description: Cadastro de Empresas (Tenants), liberação de módulos sob demanda (Feature Flags) e planos customizados.
+globs: ["backend/**"]
+alwaysApply: false
+---
+# Gestão de Empresas (Tenants) e Feature Flags
+
+O sistema permite que o acesso aos módulos seja liberado sob demanda por empresa, baseado no que foi negociado comercialmente, sem engessar planos no código-fonte. A IA DEVE respeitar esta validação em duas camadas.
+
+## 1. Cadastro de Empresas e Desacoplamento de Planos
+- **Criação Restrita:** Apenas **Super Admins** (e-mails `@asgardai.com.br`) podem criar novas empresas no sistema (inserir no Master DB e rodar o `CREATE DATABASE`).
+- **Planos Flexíveis:** Não crie tabelas estáticas de "Planos" (ex: Basic, Pro, Enterprise) amarradas ao código. O acesso aos módulos DEVE ser gerenciado por um array de strings ou JSON de `features` (ex: `['whatsapp_integration', 'predictive_dialer', 'api_access']`) salvo diretamente no registro da empresa no **Master DB**.
+- **Atribuição Comercial:** Durante o cadastro ou edição da empresa, o Super Admin selecionará quais `features` a empresa terá acesso.
+
+## 2. Validação em Duas Camadas (Tenant > User)
+Toda requisição para um módulo específico DEVE passar por duas checagens de segurança:
+1. **Validação do Tenant (Empresa):** O middleware (ex: `requireTenantFeature(['whatsapp_integration'])`) verifica no Master DB (ou no token/cache injetado) se a empresa contratou aquele módulo. Se não, retorna `403 Forbidden` com uma mensagem amigável (ex: "Módulo não contratado pela empresa").
+2. **Validação do Usuário (RBAC):** Só depois de garantir que a empresa tem o módulo, o sistema verifica (via `requirePermission`) se o usuário que fez a requisição tem permissão interna para realizar a ação.
+
+## 3. Propagação de Features
+- O array de `features` da empresa PODE ser injetado no payload do JWT durante o login, ou consultado e injetado pelo `tenant-resolver.middleware.ts` no objeto `req.tenant.features`. Isso evita consultas excessivas ao Master DB a cada requisição.

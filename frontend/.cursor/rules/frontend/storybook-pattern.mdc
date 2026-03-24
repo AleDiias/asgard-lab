@@ -1,0 +1,79 @@
+---
+description: Padrões para documentação de componentes visuais utilizando Storybook (CSF 3.0)
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Documentação com Storybook
+
+Este projeto utiliza o Storybook como ambiente isolado para desenvolvimento de UI e documentação do Design System. A IA deve gerar *stories* limpas, tipadas e alinhadas com as melhores práticas do Storybook moderno.
+
+## Regras Fundamentais
+- **Formato Obrigatório (CSF 3.0):** NUNCA utilize funções exportadas (CSF 2.0) para definir as histórias. SEMPRE utilize o padrão de objetos com o tipo `StoryObj`.
+- **Diretório de stories:** Os ficheiros de stories ficam em `src/stories/` com nomenclatura **PascalCase.stories.tsx** (ex.: `Button.stories.tsx`, `Alert.stories.tsx`). O `main.ts` do Storybook aponta para `../src/stories/**/*.stories.*`.
+- **Variantes só com args:** Como o `meta.component` já define o componente, as variantes NÃO devem chamar o componente diretamente (evitar `render: () => <Componente />`). Usar apenas `args`; o Storybook renderiza o componente com esses args. Para layouts (ex.: label + input), usar `decorators`.
+- **Foco na UI:** Teste e documente variações de interface (cores, tamanhos, estados de erro/loading), não a lógica de negócio. Faça *mock* de funções (`fn()` do `@storybook/test`) para simular interações como cliques e envios de formulário.
+
+## Organização do Meta (Default Export)
+- O `title` do componente deve refletir a sua localização na arquitetura (ex: `UI/Button`, `Features/Agent/StatusBadge`).
+- Utilize a tag `autodocs` para gerar a página de documentação automaticamente.
+- Documente os controles (ArgTypes) importantes para que o desenvolvedor possa testar diferentes propriedades direto na interface do Storybook.
+
+## Decorators e Contextos
+- Se o componente depender de rotas (`react-router-dom`), i18n (`react-i18next`), ou estado global, utilize `decorators` no próprio arquivo de *story* para envelopar o componente com o provedor necessário de forma isolada, sem poluir o componente original.
+
+## Exemplo de Estrutura Padrão (CSF 3.0)
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
+import { CustomButton } from './CustomButton'; 
+
+// 1. Configuração Global do Componente (Meta)
+const meta = {
+  title: 'UI/CustomButton',
+  component: CustomButton,
+  parameters: {
+    layout: 'centered', // Centraliza o componente na tela do Storybook
+  },
+  tags: ['autodocs'],
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: ['primary', 'secondary', 'danger'],
+      description: 'Define a cor principal do botão baseada no Tailwind',
+    },
+    disabled: {
+      control: 'boolean',
+    },
+  },
+  // Simula a ação de clique para aparecer na aba "Actions" do Storybook
+  args: { onClick: fn() }, 
+} satisfies Meta<typeof CustomButton>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+// 2. Histórias (Stories) exportadas como Objetos
+export const Primary: Story = {
+  args: {
+    label: 'Salvar Alterações',
+    variant: 'primary',
+    icon: 'pi pi-check',
+  },
+};
+
+export const Secondary: Story = {
+  args: {
+    label: 'Cancelar',
+    variant: 'secondary',
+    icon: 'pi pi-times',
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    label: 'Ação Bloqueada',
+    variant: 'primary',
+    disabled: true,
+  },
+};

@@ -1,0 +1,11 @@
+---
+description: Tratamento de erros centralizado e logs estruturados (Multi-Tenant).
+globs: ["backend/**"]
+alwaysApply: false
+---
+
+# Tratamento de Erros e Logs Estruturados
+
+- **Middlewares Globais:** NUNCA retorne o erro original (com stack trace de SQL) na resposta. Exceções devem ser capturadas por um middleware global e convertidas em erros amigáveis (`500 Internal Server Error` ou `400 Bad Request`).
+- **Classes Customizadas:** Use classes como `BusinessError` e `NotFoundError`.
+- **Rastreabilidade Multi-Tenant:** Ao registrar um erro no logger (ex: Pino, Winston), SEMPRE inclua o identificador do banco de dados/cliente (`tenantName`) no JSON do log. Isso é vital para saber qual cliente específico sofreu a falha no banco.

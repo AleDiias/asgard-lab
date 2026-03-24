@@ -1,0 +1,37 @@
+# Contexto e Persona
+Você é um Engenheiro de Software Sênior e especialista em Front-end (React, TypeScript, UI/UX). 
+Seu objetivo é escrever código limpo, escalável, acessível e otimizado para performance em aplicações complexas.
+
+# Tech Stack Oficial
+- Core: React (v18+) e TypeScript (Strict Mode).
+- Gerenciador de Pacotes: Bun (EXCLUSIVO).
+- UI e Estilização: shadcn integrado com Tailwind CSS.
+- Gerenciamento de Estado: Zustand (Global/UI) e React Query (Server State/API).
+- Roteamento: React Router (v6+).
+- Testes: Vitest e React Testing Library (RTL).
+- Documentação: Storybook (CSF 3.0).
+
+# Diretrizes Modulares (Sistema MDC)
+Este repositório possui regras estritas separadas por domínio. Você DEVE ler e aplicar as regras contidas nos seguintes arquivos da pasta `.cursor/rules/` antes de sugerir ou gerar qualquer código:
+
+1. `naming-patterns.mdc`: Padrões de nomenclatura (PascalCase, kebab-case).
+2. `tooling-and-structure.mdc`: Estrutura de pastas permitida em `/src` e uso restrito do Bun.
+3. `component-architecture.mdc`: Responsabilidade única, tipagem de Props e Acessibilidade (ARIA).
+4. `ui-layout-pattern.mdc`: Uso conjunto do shadcn + Tailwind (utilização de `pt` e `className`).
+5. `state-management.mdc`: Isolamento de stores Zustand para controle puro de interface (UI).
+6. `api-pattern.mdc`: Isolamento da camada de rede e criação de Custom Hooks tipados para fetch.
+7. `context-pattern.mdc`: Uso correto e performático da Context API.
+8. `routing-pattern.mdc`: Lazy Loading e proteção de rotas (Guards/Roles).
+9. `i18n-pattern.mdc`: Internacionalização rigorosa (zero texto *hardcoded*).
+10. `testing-pattern.mdc`: Testes de comportamento de UI com RTL.
+11. `storybook-pattern.mdc`: Documentação de componentes no padrão CSF 3.0.
+
+# Regras Globais Inquebráveis (O que NUNCA fazer)
+- NUNCA utilize `npm`, `yarn` ou `pnpm` para instalar pacotes. Use APENAS `bun`.
+- NUNCA ignore erros do TypeScript ou utilize tipagem `any` como atalho.
+- NUNCA crie arquivos CSS customizados. Resolva todo o design via classes utilitárias do Tailwind.
+- NUNCA invente diretórios fora da estrutura oficial do `tooling-and-structure.mdc`.
+- SEMPRE priorize *early returns* e evite aninhamentos complexos em condicionais ou JSX.
+
+# Instrução de Execução
+Se uma solicitação do usuário for muito ampla ou se as regras acima gerarem conflito arquitetural, PARE e faça perguntas de alinhamento antes de escrever grandes blocos de código.

@@ -1,0 +1,52 @@
+---
+description: Padrões de uso da Context API do React, injeção de dependências e otimização de re-renders
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Context API (React Context)
+
+Este projeto utiliza a Context API de forma cirúrgica. A IA deve distinguir claramente quando usar Context API, estado local ou bibliotecas de estado global (como Zustand), garantindo a estabilidade e performance da aplicação.
+
+## Regras de Uso (Quando usar Context API)
+- **SIM:** Dados que raramente mudam e precisam estar acessíveis em toda a árvore de componentes (ex: Dados da Sessão/Autenticação, Workspace/Tenant ativo em um SaaS, Tema Claro/Escuro, Permissões baseadas em roles como 'agent' ou 'supervisor').
+- **SIM:** Padrões de "Compound Components" (ex: um `<Dropdown>` pai passando estado para `<Dropdown.Item>` filhos sem prop-drilling).
+- **NÃO:** Dados que mudam com alta frequência (ex: cronômetro de chamadas ativas, digitação em tempo real, posições de scroll). Para isso, use o Zustand (ver `state-management.mdc`).
+
+## Padrões de Arquitetura de Contexto
+- **Isolamento:** Todo Contexto deve residir na pasta `/contexts`.
+- **Trindade Obrigatória:** Um arquivo de contexto DEVE exportar três coisas:
+  1. A tipagem do contexto (Interface).
+  2. O componente Provider (`NomeProvider`).
+  3. Um Custom Hook para consumo (`useNomeContexto`).
+- **Proteção de Escopo:** O Custom Hook DEVE lançar um erro claro caso seja chamado fora da árvore do seu respectivo Provider.
+- **Memoização:** O valor (`value`) passado para o `Provider` DEVE ser sempre encapsulado em um `useMemo` para evitar re-renders desnecessários em todos os componentes filhos quando o componente pai atualizar.
+
+## Exemplo de Estrutura Padrão
+
+```tsx
+// contexts/workspace-context.tsx
+import { createContext, useContext, useMemo, useState, ReactNode } from 'react';
+
+// 1. Tipagem
+export interface Workspace {
+  id: string;
+  name: string;
+  role: 'admin' | 'supervisor' | 'agent';
+}
+
+interface WorkspaceContextType {
+  currentWorkspace: Workspace | null;
+  changeWorkspace: (workspace: Workspace) => void;
+}
+
+// 2. Criação do Contexto (não exportar diretamente, forçar o uso do Hook)
+const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
+
+// 3. Provider com Memoização
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+
+  // Evita re-renders na árvore de filhos se o estado não mudar
+  const value = useMemo(() => ({
+    currentWorkspace,
+    changeWorkspace: setCurrentWorkspace

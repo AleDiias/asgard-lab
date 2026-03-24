@@ -1,0 +1,52 @@
+---
+description: Regras de nomenclatura de ficheiros e diretórios para o projeto React
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Padrões de Nomenclatura (Naming Patterns)
+
+Este projeto utiliza padrões rigorosos de nomenclatura para garantir a consistência, escalabilidade e facilidade de manutenção. Sempre que criares, renomeares ou referenciares ficheiros e pastas, deves seguir estritamente as regras abaixo.
+
+## Regras por Tipo de Ficheiro/Módulo
+
+### 1. Componentes (React)
+- **Padrão:** `PascalCase`
+- **Extensão:** `.tsx` ou `.jsx`
+- **Exemplo Correto:** `UserProfile.tsx`, `ButtonPrimary.tsx`, `DashboardLayout.tsx`
+- **Exemplo Incorreto:** `user-profile.tsx`, `userProfile.tsx`
+
+### 2. Stores (Gestão de Estado)
+- **Padrão:** `kebab-case`
+- **Extensão:** `.ts`
+- **Exemplo Correto:** `user-store.ts`, `auth-state.ts`, `cart-store.ts`
+- **Exemplo Incorreto:** `UserStore.ts`, `userStore.ts`
+
+### 3. Services (Lógica de Negócio e Serviços)
+- **Padrão:** `kebab-case`
+- **Extensão:** `.ts`
+- **Exemplo Correto:** `payment-service.ts`, `notification-handler.ts`
+- **Exemplo Incorreto:** `PaymentService.ts`, `paymentService.ts`
+
+### 4. API (Integrações e Endpoints)
+- **Padrão:** `kebab-case`
+- **Extensão:** `.ts`
+- **Exemplo Correto:** `user-api.ts`, `fetch-dashboard-data.ts`
+- **Exemplo Incorreto:** `UserApi.ts`, `userAPI.ts`
+
+### 5. Utils (Funções Utilitárias)
+- **Padrão:** `kebab-case`
+- **Extensão:** `.ts`
+- **Exemplo Correto:** `date-formatter.ts`, `string-helpers.ts`
+- **Exemplo Incorreto:** `dateFormatter.ts`, `DateFormatter.ts`
+
+### 6. Stories (Storybook / UI)
+- **Padrão:** `PascalCase.stories`
+- **Extensão:** `.tsx` ou `.jsx`
+- **Exemplo Correto:** `ButtonPrimary.stories.tsx`, `UserProfile.stories.tsx`
+- **Exemplo Incorreto:** `button-primary.stories.tsx`, `ButtonPrimaryStory.tsx`
+
+### 7. Testes E2E (End-to-End)
+- **Padrão:** `kebab-case.test` (ou `.spec`)
+- **Extensão:** `.ts` (ou `.tsx` se aplicável)
+- **Exemplo Correto:** `user-login.test.ts`, `checkout-flow.spec.ts`
+- **Exemplo Incorreto:** `UserLogin.test.ts`, `userLogin.test.ts`

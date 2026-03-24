@@ -1,0 +1,31 @@
+---
+description: Orquestração de formulários (Zod, fieldErrors, ActionBar) alinhada aos pilares da UI.
+globs: ["frontend/src/pages/**", "frontend/src/components/screens/**"]
+alwaysApply: false
+---
+
+# Formulários: orquestração vs. apresentação
+
+## Pilares (checklist)
+
+| Pilar | Onde | Critério |
+|-------|------|----------|
+| **Primitivos** | `components/ui/` | `Button`, `Input`, `ActionBar` — só props visuais / composição; sem API/store. |
+| **Presentacional** | `components/screens/**` | `*FormUI` recebe `values`, `fieldErrors`, `onValueChange`, `onSubmit`; estado local só para UI (popover, etc.). |
+| **Orquestração** | `pages/app/**` | Estado de envio, **Zod** (`safeParse`), mapeamento de erros → `fieldErrors`, chamadas HTTP; **não** dentro de `ActionBar` ou `*FormUI`. |
+| **Unidirecional** | Formulários | Alterações sobem com `onValueChange`; erros de validação descem como `fieldErrors`. |
+
+## `ActionBar`
+
+- Usa props tipadas: `title`, `breadcrumb`, `actions` (slot).
+- O **container** monta `actions` (voltar, `type="submit"` + `form="…"`, etc.); a barra não valida nem chama API.
+
+## Zod
+
+- Schemas em `pages/app/schemas/*.schema.ts` (ou feature equivalente).
+- No `onSubmit` da página: `schema.safeParse(dados)`; se falhar, `setFieldErrors(mapearErroZod(...))` e **return** antes da API.
+- Mensagens estáveis e testáveis no schema (ou i18n no container).
+
+## Referência
+
+- `ClientsRegisterNewPage` + `schemas/client-register-new.schema.ts`: exemplo com Zod e `fieldErrors`.

@@ -1,0 +1,1 @@
+import{j as t}from"./index-DVQM43HA.js";function n(r){const e=r.trim(),s=e.endsWith("*")?e.slice(0,-1).trimEnd():e;return t.jsxs(t.Fragment,{children:[s,t.jsx("span",{className:"text-destructive","aria-hidden":!0,children:" *"})]})}export{n as r};

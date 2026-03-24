@@ -1,0 +1,1 @@
+function e(){if(typeof window>"u")return"demo";const o=window.location.hostname,t=o.split(".");if(t.length<=1||o==="localhost")return"demo";const n=t[0];return n==="www"||n==="admin"?"demo":n}export{e as g};

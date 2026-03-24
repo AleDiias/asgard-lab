@@ -1,0 +1,12 @@
+---
+description: Design de API RESTful, validação Zod e respostas padronizadas.
+globs: ["backend/**"]
+alwaysApply: false
+---
+
+# Design de API e Validação
+
+- **Roteamento RESTful:** Utilize substantivos no plural e evite verbos na URL (ex: `POST /api/v1/agents`).
+- **Validação Rigorosa (Zod):** Todos os dados de entrada (`body`, `params`, `query`) DEVEM ser validados com Zod antes de chegar ao Controller.
+- **Isolamento de Tenant por Rota:** Rotas administrativas (ex: `POST /api/admin/clients` que executa o `CREATE DATABASE`) devem ser estritamente separadas das rotas de uso do CRM (ex: `GET /api/v1/calls`).
+- **Respostas Padronizadas:** Retorne sempre um JSON estruturado: `{ "success": true, "data": ... }` ou `{ "success": false, "error": { "message": "..." } }`.

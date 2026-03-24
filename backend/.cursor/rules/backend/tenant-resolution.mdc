@@ -1,0 +1,17 @@
+---
+description: Identificação do Tenant via Headers, validação no Master DB e injeção de contexto nas requisições.
+globs: ["backend/**"]
+---
+# Segurança, Autenticação JWT e Super Admins
+
+- **Token Multi-Contexto:** O payload do JWT DEVE conter o identificador do cliente (`tenantId`), o ID do usuário, a sua Role padrão, e o seu e-mail.
+- **Injeção de Dependência:** O middleware de autenticação (`requireAuth`) extrai o token e injeta `req.user`.
+
+## Privilégios de Super Admin (AsgardAI)
+- Usuários cujo e-mail termine em `@asgardai.com.br` possuem acesso de **Super Admin** (God Mode).
+- As rotas que alteram dados estruturais (ex: Criar um novo Tenant/Database, suspender um cliente) DEVEM ser protegidas por um middleware específico (ex: `requireSuperAdmin`) que valida essa terminação de e-mail.
+- O Super Admin pode atuar dentro do contexto de um Tenant específico (para dar suporte) ou no contexto global (Master DB).
+
+## Controle de Acesso Baseado em Perfis (RBAC)
+- Para os usuários comuns dos clientes, utilize middlewares (`requireRole`) para diferenciar ações de `admin` (gestor daquela empresa), `supervisor` e `agent`.
+- **Hash de Senhas:** Senhas devem ser salvas com bcrypt/argon2. NUNCA trafegue senhas em texto plano.

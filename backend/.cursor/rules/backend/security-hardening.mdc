@@ -1,0 +1,25 @@
+---
+description: Padrões de segurança contra invasões (OWASP), blindagem de API, Rate Limiting e isolamento de Banco de Dados.
+globs: ["backend/**", "**/server.ts", "**/middlewares/security*.ts", "**/infra/**/*.ts", "docker-compose*.yml"]
+alwaysApply: false
+---
+# Segurança da Aplicação e Infraestrutura (Hardening)
+
+A API deve ser construída com a premissa de "Zero Trust" (Confiança Zero). A IA DEVE aplicar proteções contra ataques comuns (OWASP Top 10) e garantir o isolamento da camada de dados.
+
+## 1. Isolamento do Banco de Dados (Infraestrutura e Código)
+- **Acesso Estritamente Interno:** O banco de dados (PostgreSQL/Redis) NUNCA deve expor portas para a internet pública (ex: `0.0.0.0:5432`). Em arquivos `docker-compose.yml`, o banco de dados não deve ter a chave `ports` mapeada para a máquina host em produção, devendo ser acessível apenas pela rede interna do Docker (`networks`).
+- **Conexão Segura:** A API deve se conectar ao banco utilizando variáveis de ambiente com credenciais fortes (`DATABASE_URL`). A IA nunca deve criar rotas na API que permitam execução de queries SQL arbitrárias ou "testes de conexão" abertos.
+
+## 2. Blindagem da API contra Invasões (OWASP Top 10)
+- **SQL Injection (Injeção de SQL):** É PROIBIDO concatenar strings diretamente em consultas SQL. Todo acesso a dados DEVE ser feito através do ORM (Prisma/Drizzle/Knex) ou utilizando *Parameterized Queries* se o uso de SQL puro for absolutamente necessário.
+- **CORS Estrito:** O middleware de CORS NUNCA deve ser configurado com `origin: '*'` em produção. Ele DEVE aceitar apenas as origens (domínios) específicas do seu Frontend (ex: `*.asgardai.com.br`).
+- **Proteção de Headers (Helmet):** A API DEVE utilizar bibliotecas como `helmet` para ocultar o cabeçalho `X-Powered-By: Express` e injetar políticas de segurança (HSTS, NoSniff, XSS Protection).
+- **Limite de Payload:** O parser de JSON (ex: `express.json()`) DEVE ter um limite estrito de tamanho (ex: `limit: '1mb'`) para evitar ataques de *Payload Overflow* (Negação de Serviço por memória).
+
+## 3. Prevenção de Força Bruta (Rate Limiting)
+- **Rate Limit Global:** A API deve ter um limite geral de requisições por IP para mitigar ataques DDoS básicos.
+- **Rate Limit Específico (Sensível):** Rotas críticas de autenticação (ex: `/login`, `/forgot-password`) DEVEM ter um limite muito mais agressivo (ex: máximo de 5 tentativas a cada 15 minutos por IP) para impedir ataques de dicionário ou força bruta de senhas.
+
+## 4. Gestão de Segredos (Secrets)
+- **Fail-Fast de Variáveis de Ambiente:** O arquivo `server.ts` (ou equivalente na inicialização) DEVE validar a presença de todas as variáveis de ambiente sensíveis (`JWT_SECRET`, `DATABASE_URL`) antes de subir o servidor. Se faltar alguma, a aplicação deve estourar um erro fatal imediatamente e não iniciar.

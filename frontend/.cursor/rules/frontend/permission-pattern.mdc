@@ -1,0 +1,20 @@
+---
+description: Controle de renderização condicional baseada em Permissões Granulares e Super Admin.
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Controle de Permissões na UI (Granular Access)
+
+A interface se adapta dinamicamente às permissões do usuário logado. A IA DEVE garantir que elementos restritos não sejam renderizados na tela caso o usuário não tenha o acesso necessário.
+
+## 1. Renderização Condicional Limpa
+- NUNCA mostre botões de ação (Criar, Editar, Excluir) ou itens de menu de navegação se o usuário não possuir a permissão para tal. Esconda o elemento em vez de apenas desabilitá-lo (`disabled`).
+- Crie um hook customizado `usePermissions()` que retorna funções utilitárias como `hasPermission('create_users')`.
+- Crie um componente wrapper `<Can I="create_users"> ... </Can>` para envolver blocos de UI que exigem permissões específicas, mantendo o JSX limpo.
+
+## 2. Super Admin (God Mode)
+- O hook `usePermissions()` e o componente `<Can>` DEVEM sempre retornar `true` (renderizar o conteúdo) se o e-mail do usuário logado terminar com `@asgardai.com.br`.
+
+## 3. Gestão de Permissões (Formulários)
+- Nos formulários de Criação/Edição de Usuários, renderize as opções de permissões (ex: Checkboxes ou Switches) de forma agrupada por módulo (ex: "Campanhas": Ler, Criar, Editar).
+- O usuário que está criando/editando só pode visualizar e conceder permissões que ele próprio possui.

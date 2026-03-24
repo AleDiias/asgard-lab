@@ -1,0 +1,11 @@
+{
+  "app": {
+    "notFound": {
+      "title": "404",
+      "description": "Oops! Page not found",
+      "backToHome": "Return to Home"
+    },
+    "loading": "Loading..."
+  }
+}
+

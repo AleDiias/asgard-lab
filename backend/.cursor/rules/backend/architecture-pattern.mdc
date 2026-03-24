@@ -1,0 +1,58 @@
+---
+description: Arquitetura em camadas (Layered/Clean Architecture) com foco em Orquestração separada de Primitivos de Domínio.
+globs: ["backend/**"]
+alwaysApply: false
+---
+# Padrões de Arquitetura e Orquestração Multi-Tenant
+
+O backend utiliza uma arquitetura modular inspirada nos princípios da *Clean Architecture*. A IA DEVE respeitar a separação clara entre "Primitivos/Regras Puras", "Componentes Burros (Acesso a dados)" e "Orquestradores".
+
+## As 3 Camadas de Lógica
+
+### 1. Primitivos de Domínio e Validação (Pure Logic)
+- **O que são:** Schemas do Zod, Entidades de Domínio, Utilitários de cálculo e Formatações.
+- **Regras:**
+  - São agnósticos. Não sabem que existe um banco de dados ou uma requisição HTTP.
+  - Focados apenas na validade dos dados (ex: `calculateCallCost()`, `agentSchema`).
+  - Localização: `/schemas`, `/domain`, `/utils`.
+
+### 2. Componentes Burros / Acesso a Dados (Repositories)
+- **O que são:** Repositories e adapters de integrações externas (ex: APIs de Asterisk, filas Redis).
+- **Regras:**
+  - Focados em COMO ler e escrever dados no banco.
+  - **Não tomam decisões de negócio.** Se um agente não tem saldo, o repositório não deve validar isso; ele apenas executa a query que lhe foi pedida.
+  - Devem SEMPRE solicitar a conexão correta do banco (Multi-Tenant) baseada no `tenantId`.
+  - Localização: `/repositories`, `/infra`.
+
+### 3. Orquestração Fora dos Componentes (Services / Use Cases)
+- **O que são:** O cérebro do módulo (ex: `CreateCampaignService`, `ProcessCallWebhookService`).
+- **Regras:**
+  - Focados no FLUXO da aplicação (O que deve acontecer e quando).
+  - Recebem os dados do Controller, chamam as validações puras (Primitivos), aplicam as regras de negócio e comandam os Repositories (Componentes Burros) para salvar os dados.
+  - **Injeção de Dependências:** Devem receber Repositories via construtor para facilitar testes unitários.
+  - Localização: `/services`, `/use-cases`.
+
+## Exemplo de Orquestração no Backend
+
+```typescript
+// ✅ Orquestrador (Service) coordena os "primitivos" e os "componentes burros"
+export class StartDialerCampaignService {
+  constructor(
+    private readonly campaignRepo: CampaignRepository, // Componente burro (Data)
+    private readonly dialerGateway: DialerIntegration   // Componente burro (External API)
+  ) {}
+
+  async execute(tenantId: string, campaignId: string) {
+    // 1. Orquestração: Busca dados (via repo burro)
+    const campaign = await this.campaignRepo.findById(tenantId, campaignId);
+    
+    // 2. Regra Pura: Valida se pode iniciar
+    if (campaign.status !== 'ready') throw new BusinessError('Campanha não está pronta');
+    
+    // 3. Orquestração: Manda iniciar na integração externa
+    await this.dialerGateway.start(campaign.externalId);
+    
+    // 4. Orquestração: Atualiza o banco
+    await this.campaignRepo.updateStatus(tenantId, campaignId, 'running');
+  }
+}

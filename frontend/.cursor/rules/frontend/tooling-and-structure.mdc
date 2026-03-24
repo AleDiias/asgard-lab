@@ -1,0 +1,46 @@
+---
+description: Padrões de estrutura de diretórios, gerenciador de pacotes (Bun) e pipeline de validação (Lint/Typecheck)
+globs: ["frontend/**"]
+alwaysApply: false
+---
+# Estrutura do Projeto e Ferramental (Tooling)
+
+Esta regra define a espinha dorsal do repositório. A IA deve respeitar a árvore de diretórios e utilizar exclusivamente as ferramentas de CLI padronizadas pelo projeto para garantir velocidade, qualidade e consistência.
+
+## 1. Gerenciador de Pacotes Oficial: Bun
+- **NUNCA** utilize `npm`, `yarn` ou `pnpm` sob nenhuma circunstância.
+- O gerenciador e *runtime* oficial do projeto é o **Bun**.
+- Ao sugerir a instalação de pacotes, remover bibliotecas ou rodar scripts, utilize estritamente:
+  - `bun install`
+  - `bun add <pacote>` / `bun add -d <pacote>`
+  - `bun remove <pacote>`
+  - `bun run <script>`
+
+## 2. Pipeline de Validação (Qualidade de Código)
+O código gerado deve ser limpo e tipado corretamente.
+- **Lint e Formatação:** O projeto aplica regras estritas (ESLint/Biome). A IA deve escrever código já alinhado às melhores práticas (sem variáveis não utilizadas, imports não organizados, etc.).
+- **Verificação de Tipos (Typecheck):** O uso do TypeScript não é apenas decorativo. Nenhuma tipagem dinâmica (`any`) sem justificativa é permitida.
+- **Fluxo de Trabalho:** Ao finalizar uma refatoração grande ou criar uma nova *feature*, a IA deve orientar o usuário a rodar (ou rodar no terminal, se tiver permissão):
+  - `bun run lint` (para validação de código)
+  - `bun run typecheck` (para validação do TypeScript com `tsc --noEmit`)
+
+## 3. Padrão Global de Diretórios
+Todo código-fonte reside dentro de `/src`. A IA NUNCA deve criar novos arquivos fora da hierarquia abaixo:
+
+```text
+/src
+  /api          # Configuração do cliente HTTP e chamadas de rede (ex: agent-api.ts)
+  /assets       # Mídias estáticas, ícones SVG e fontes
+  /components   # Componentes React reutilizáveis
+    /ui         # Primitivos: componentes atômicos, um por diretório (ex: button/, dialog/, input/)
+    /layout     # Estruturas de layout (ex: Sidebar, Header)
+    /features   # Componentes presentacionais por feature (ex: features/agents/AgentCard.tsx)
+    /screens     # Componentes presentacionais compartilhados entre features
+  /contexts     # React Context API (Providers e Hooks de contexto)
+  /hooks        # Custom Hooks globais (lógica React reutilizável)
+  /locales      # Arquivos JSON de tradução (i18n)
+  /pages        # Telas inteiras vinculadas às rotas (ex: DashboardPage)
+  /routes       # Configuração do Router e Guards (ex: ProtectedRoute)
+  /store        # Gerenciamento de estado global (Zustand/Redux)
+  /types        # Definições TS globais, interfaces de Payload/Response
+  /utils        # Funções puras, formatadores de data/moeda e utilitários
