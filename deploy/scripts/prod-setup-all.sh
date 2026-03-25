@@ -374,11 +374,38 @@ deploy_stack() {
   echo "==> Build das imagens…"
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build
 
-  echo "==> A subir contentores…"
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+  echo "==> A subir Postgres…"
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d postgres
+
+  wait_postgres_healthy
+
+  # As migrações (api-auth/api-core) usam `gen_random_uuid()`.
+  # Esta função vive no extension `pgcrypto`, que pode não estar habilitado por defeito.
+  echo "==> A habilitar extension pgcrypto (se necessário)…"
+  docker exec -i asgardlab-postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"'
+
+  echo "==> A subir api-auth, api-core e frontend…"
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d api-auth api-core frontend
 
   echo "==> Estado:"
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
+}
+
+wait_postgres_healthy() {
+  local tries=90
+  echo "==> A validar Postgres (healthcheck)…"
+  for _ in $(seq 1 "$tries"); do
+    local status
+    status="$(docker inspect -f '{{.State.Health.Status}}' asgardlab-postgres 2>/dev/null || true)"
+    if [[ "$status" == "healthy" ]]; then
+      echo "==> Postgres está healthy."
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "Erro: Postgres não ficou healthy a tempo." >&2
+  return 1
 }
 
 wait_api_auth() {
@@ -400,7 +427,7 @@ seed_api_auth() {
     return 0
   fi
   echo "==> Seed inicial (api-auth)…"
-  docker exec -T asgardlab-api-auth bun run db:seed
+  docker exec -i asgardlab-api-auth bun run db:seed
 }
 
 main() {
