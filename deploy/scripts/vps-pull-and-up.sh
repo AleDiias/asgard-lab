@@ -23,4 +23,4 @@ else
   git pull --ff-only
 fi
 
-exec "$SCRIPT_DIR/prod-up.sh"
+exec "$SCRIPT_DIR/prod-setup-all.sh" --deploy-only --skip-docker-install --skip-proxy --skip-seed

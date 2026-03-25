@@ -6,6 +6,22 @@
 #
 # Requisitos: Docker Engine + Docker Compose v2, Git (para clonar/atualizar o repo na VPS).
 
+# Wrapper de compatibilidade: o fluxo único agora é `prod-setup-all.sh`.
+# Este script sobe apenas o stack (sem seed, sem proxy) assumindo que `deploy/.env` já existe.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+if [[ $# -ge 1 ]]; then
+  ENV_ARG="$1"
+  if [[ -f "$ENV_ARG" ]]; then
+    cp "$ENV_ARG" "$REPO_ROOT/deploy/.env"
+    echo "==> deploy/.env atualizado a partir de: $ENV_ARG"
+  fi
+fi
+
+exec "$SCRIPT_DIR/prod-setup-all.sh" --deploy-only --skip-docker-install --skip-proxy --skip-seed
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,13 +43,16 @@ fi
 
 # Caminhos canónicos: se passar outro .env, copiamos para deploy/.env porque o Compose
 # usa env_file: .env junto deste ficheiro (DATABASE_URL e segredos entram no contentor a partir daqui).
-_canon() {
-  (cd "$(dirname "$1")" && pwd)/$(basename "$1")
-}
-if [[ "$(_canon "$ENV_ARG")" != "$(_canon "$DEPLOY_ENV")" ]]; then
+# (Evita subshell aninhado tipo (cd "$(dirname "$1")"…) — falha em bash antigo / CRLF.)
+_env_dir="$(dirname "$ENV_ARG")"
+_env_abs="$(cd "$_env_dir" && pwd)/$(basename "$ENV_ARG")"
+_deploy_dir="$(dirname "$DEPLOY_ENV")"
+_deploy_abs="$(cd "$_deploy_dir" && pwd)/$(basename "$DEPLOY_ENV")"
+if [[ "$_env_abs" != "$_deploy_abs" ]]; then
   cp "$ENV_ARG" "$DEPLOY_ENV"
   echo "==> Ambiente copiado para deploy/.env (necessário para env_file dos contentores)."
 fi
+unset _env_dir _env_abs _deploy_dir _deploy_abs
 
 cd "$REPO_ROOT"
 

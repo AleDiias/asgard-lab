@@ -1,4 +1,35 @@
 #!/usr/bin/env bash
+# Wrapper de compatibilidade: o fluxo único agora é `prod-setup-all.sh`.
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+NO_SEED=0
+ENV_ARG=""
+for arg in "$@"; do
+  case "$arg" in
+    --no-seed)
+      NO_SEED=1
+      ;;
+    -h|--help)
+      ;;
+    *)
+      ENV_ARG="$arg"
+      ;;
+  esac
+done
+
+if [[ -n "$ENV_ARG" && -f "$ENV_ARG" ]]; then
+  cp "$ENV_ARG" "$REPO_ROOT/deploy/.env"
+fi
+
+if [[ "$NO_SEED" -eq 1 ]]; then
+  exec "$SCRIPT_DIR/prod-setup-all.sh" --skip-seed
+else
+  exec "$SCRIPT_DIR/prod-setup-all.sh"
+fi
+
 # Instalação inicial na VPS (Docker): prepara deploy/.env, sobe o stack e corre seed do api-auth.
 #
 # Uso (na raiz do repositório clonado):
