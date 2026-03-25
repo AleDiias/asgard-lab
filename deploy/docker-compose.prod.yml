@@ -77,7 +77,7 @@ services:
       - api-auth
       - api-core
     ports:
-      - "${HOST_FRONTEND_PORT:-80}:80"
+      - "${HOST_FRONTEND_PORT:-3000}:80"
     networks:
       - asgardlab_net
 
