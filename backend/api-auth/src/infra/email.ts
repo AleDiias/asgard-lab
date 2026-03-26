@@ -10,6 +10,11 @@ const FRONTEND_URL = (process.env.FRONTEND_URL ?? "http://localhost:3005").repla
   /\/$/,
   ""
 );
+/**
+ * Opcional: template para links de tenant (ex.: https://{tenant}.asgardai.com.br).
+ * Se ausente, tenta derivar a partir de FRONTEND_URL substituindo apenas o subdomínio.
+ */
+const FRONTEND_TENANT_URL_TEMPLATE = process.env.FRONTEND_TENANT_URL_TEMPLATE ?? "";
 /** URL absoluta do logo nos e-mails (ex.: mesmo domínio do app em `/asgard-logo.png`). */
 const EMAIL_LOGO_URL = (process.env.EMAIL_LOGO_URL ?? `${FRONTEND_URL}/asgard-logo.png`).replace(
   /\/$/,
@@ -17,6 +22,31 @@ const EMAIL_LOGO_URL = (process.env.EMAIL_LOGO_URL ?? `${FRONTEND_URL}/asgard-lo
 );
 
 export type TokenEmailType = "forgot" | "activation";
+
+function resolveFrontendUrl(tenantDomain?: string): string {
+  if (!tenantDomain || !tenantDomain.trim()) {
+    return FRONTEND_URL;
+  }
+  const domain = tenantDomain.trim().toLowerCase();
+
+  if (FRONTEND_TENANT_URL_TEMPLATE.includes("{tenant}")) {
+    return FRONTEND_TENANT_URL_TEMPLATE.replace("{tenant}", domain).replace(/\/$/, "");
+  }
+
+  try {
+    const url = new URL(FRONTEND_URL);
+    const labels = url.hostname.split(".");
+    // Ex.: blackbox.asgardai.com.br -> tenant.asgardai.com.br
+    if (labels.length >= 3) {
+      labels[0] = domain;
+      url.hostname = labels.join(".");
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    // Fallback para FRONTEND_URL base se parsing falhar.
+  }
+  return FRONTEND_URL;
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -198,9 +228,11 @@ function getTransporter(): nodemailer.Transporter | null {
 export async function sendTokenEmail(
   to: string,
   token: string,
-  type: TokenEmailType
+  type: TokenEmailType,
+  options?: { tenantDomain?: string }
 ): Promise<void> {
-  const resetLink = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  const frontendUrl = resolveFrontendUrl(options?.tenantDomain);
+  const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(token)}`;
   const { subject, text, html } = getSubjectAndBody(type, resetLink, to);
 
   const transport = getTransporter();

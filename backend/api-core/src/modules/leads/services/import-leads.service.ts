@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { TenantDb } from "@/infra/database/tenant/connection-manager.js";
 import { leadImportBatches } from "@/infra/database/tenant/schema.js";
@@ -41,6 +42,7 @@ export class ImportLeadsService {
         const [batch] = await tx
           .insert(leadImportBatches)
           .values({
+            id: crypto.randomUUID(),
             fileName: trimmedFile,
             importedCount: 0,
             removedCount: 0,

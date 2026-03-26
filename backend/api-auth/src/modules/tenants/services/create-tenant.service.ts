@@ -72,7 +72,7 @@ export class CreateTenantService {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
     await this.userRepo.savePasswordResetToken(tenant.id, adminEmail, token, expiresAt);
-    await sendTokenEmail(adminEmail, token, "activation");
+    await sendTokenEmail(adminEmail, token, "activation", { tenantDomain: domain });
 
     return {
       ...tenant,

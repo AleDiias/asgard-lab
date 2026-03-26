@@ -4,6 +4,7 @@ import { asgardUsers } from "@/infra/database/master/schema.js";
 
 export interface AsgardUserEntity {
   id: string;
+  name?: string;
   email: string;
   passwordHash: string | null;
   active: boolean;
@@ -38,6 +39,7 @@ export class AsgardUserRepositoryDrizzle implements AsgardUserRepository {
     const [user] = await masterDb
       .select({
         id: asgardUsers.id,
+        name: asgardUsers.name,
         email: asgardUsers.email,
         passwordHash: asgardUsers.passwordHash,
         active: asgardUsers.isActive,

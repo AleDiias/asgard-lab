@@ -52,7 +52,7 @@ export class InviteTenantUserService {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
     await this.userRepo.savePasswordResetToken(tenant.id, email, token, expiresAt);
-    await sendTokenEmail(email, token, "activation");
+    await sendTokenEmail(email, token, "activation", { tenantDomain: domain });
 
     logger.info("Convite de utilizador tenant enviado", { tenantDomain: domain, email });
 

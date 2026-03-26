@@ -26,6 +26,7 @@ export interface AuthResult {
   token: string;
   user: {
     id: string;
+    name: string;
     email: string;
     role: string;
     isSuperAdmin: boolean;
@@ -94,6 +95,7 @@ export class AuthenticateUserService {
       token,
       user: {
         id: user.id,
+        name: user.name ?? user.email.split("@")[0],
         email: user.email,
         role: user.role,
         isSuperAdmin: false,
@@ -150,6 +152,7 @@ export class AuthenticateUserService {
       token,
       user: {
         id: asgardUser.id,
+        name: asgardUser.name ?? asgardUser.email.split("@")[0],
         email: asgardUser.email,
         role: "asgard_employee",
         isSuperAdmin: true,

@@ -39,8 +39,7 @@ export function DashboardLayout() {
     navigate("/", { replace: true });
   };
 
-  const userName =
-    user?.email?.split("@")[0]?.replace(/[._-]/g, " ").trim() || "Usuário";
+  const userName = user?.name?.trim() || user?.email?.split("@")[0]?.replace(/[._-]/g, " ").trim() || "Usuário";
 
   return (
     <SidebarProvider className="flex h-svh max-h-svh min-h-0 w-full overflow-hidden">

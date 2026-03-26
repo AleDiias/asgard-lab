@@ -66,7 +66,7 @@ export class ForgotPasswordService {
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
     await this.userRepo.savePasswordResetToken(tenant.id, normalizedEmail, token, expiresAt);
 
-    await sendTokenEmail(normalizedEmail, token, type);
+    await sendTokenEmail(normalizedEmail, token, type, { tenantDomain });
 
     return { ok: true };
   }

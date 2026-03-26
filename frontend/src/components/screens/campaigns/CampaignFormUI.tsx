@@ -115,7 +115,7 @@ export function CampaignFormUI({
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={CAMPAIGN_INTEGRATION_NONE}>Sem integração (rascunho)</SelectItem>
+              <SelectItem value={CAMPAIGN_INTEGRATION_NONE}>Sem integração</SelectItem>
               {integrations.map((i) => (
                 <SelectItem
                   key={i.id}

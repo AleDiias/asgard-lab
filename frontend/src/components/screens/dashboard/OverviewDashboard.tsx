@@ -52,7 +52,7 @@ export function OverviewDashboard({ showDemoMetrics = false }: OverviewDashboard
       />
 
       <p className="text-sm text-muted-foreground">
-        Bem-vindo{user?.email ? `, ${user.email}` : ""}. Aqui fica a visão geral do CRM.
+        Bem-vindo{user?.name ? `, ${user.name}` : user?.email ? `, ${user.email}` : ""}. Aqui fica a visão geral do CRM.
       </p>
 
       {showDemoMetrics ? (

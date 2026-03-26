@@ -65,6 +65,7 @@ export class UserRepositoryDrizzle implements UserRepository {
     const [row] = await db
       .select({
         id: users.id,
+        name: users.name,
         email: users.email,
         passwordHash: users.passwordHash,
         role: users.role,
@@ -86,6 +87,7 @@ export class UserRepositoryDrizzle implements UserRepository {
 
     return {
       id: row.id,
+      name: row.name,
       email: row.email,
       passwordHash: row.passwordHash ?? null,
       role: row.role,
