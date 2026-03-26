@@ -1,9 +1,12 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Filter, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { ActionBar, Button } from "@/components/ui";
 import { TablePaginationBar } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DEFAULT_CONFIG_PAGE_SIZE,
   usePaginationSlice,
@@ -14,8 +17,35 @@ import {
   clientUsersScreen,
 } from "@/components/screens/client-users";
 import type { ClientUserListRow } from "@/components/screens/client-users/types";
-import { listTenantUsersFn } from "@/api/admin/admin.api";
+import type { ClientUserFormFieldErrors, ClientUserFormValues } from "@/components/screens/client-users";
+import { listTenantUsersFn, patchTenantUserStatusFn, updateTenantUserPermissionsFn } from "@/api/admin/admin.api";
 import type { TenantUserRecord } from "@/types/admin.types";
+import { getErrorMessage } from "@/utils/feedback";
+import {
+  clientUserEditFormSchema,
+  mapZodErrorToClientUserFormFieldErrors,
+} from "@/pages/app/schemas/client-user-form.schema";
+import {
+  PERMISSION_CAMPAIGNS_READ,
+  PERMISSION_CAMPAIGNS_WRITE,
+  PERMISSION_INTEGRATIONS_READ,
+  PERMISSION_INTEGRATIONS_WRITE,
+  PERMISSION_LEADS_READ,
+  PERMISSION_LEADS_WRITE,
+  PERMISSION_USERS_MANAGE,
+} from "@/constants/permissions";
+
+const DEFAULT_PERMISSION_OPTIONS = [
+  { id: "dashboard.view", label: "Visualizar Dashboard" },
+  { id: "agents.manage", label: "Gerenciar Agentes" },
+  { id: PERMISSION_USERS_MANAGE, label: "Gerir utilizadores do tenant" },
+  { id: PERMISSION_LEADS_READ, label: "Leads - consultar" },
+  { id: PERMISSION_LEADS_WRITE, label: "Leads - importar e alterar" },
+  { id: PERMISSION_CAMPAIGNS_READ, label: "Campanhas - consultar" },
+  { id: PERMISSION_CAMPAIGNS_WRITE, label: "Campanhas - criar e sincronizar" },
+  { id: PERMISSION_INTEGRATIONS_READ, label: "Integracoes - consultar" },
+  { id: PERMISSION_INTEGRATIONS_WRITE, label: "Integracoes - configurar" },
+];
 
 function mapToRow(u: TenantUserRecord): ClientUserListRow {
   return {
@@ -29,9 +59,25 @@ function mapToRow(u: TenantUserRecord): ClientUserListRow {
 }
 
 export default function ClientUsersPage() {
+  const qc = useQueryClient();
+  const [editingRow, setEditingRow] = useState<ClientUserListRow | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<ClientUserFormFieldErrors | undefined>();
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["tenant", "users"],
     queryFn: listTenantUsersFn,
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => patchTenantUserStatusFn(id, { isActive: false }),
+    onSuccess: async () => {
+      toast.success("Usuário desativado com sucesso.");
+      await qc.invalidateQueries({ queryKey: ["tenant", "users"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(getErrorMessage(e, "Não foi possível desativar o usuário."));
+    },
   });
 
   const rows: ClientUserListRow[] = useMemo(() => (data ?? []).map(mapToRow), [data]);
@@ -45,6 +91,53 @@ export default function ClientUsersPage() {
   } = usePaginationSlice(rows, {
     initialPageSize: DEFAULT_CONFIG_PAGE_SIZE,
   });
+
+  const handleDelete = useCallback(
+    (row: ClientUserListRow) => {
+      const ok = window.confirm(`Desativar o usuário ${row.name}?`);
+      if (!ok) return;
+      deactivateMutation.mutate(row.id);
+    },
+    [deactivateMutation]
+  );
+
+  const handleEditSubmit = useCallback(
+    async (form: ClientUserFormValues) => {
+      if (!editingRow) return;
+      const parsed = clientUserEditFormSchema.safeParse({
+        name: form.name,
+        email: form.email,
+        permissionIds: form.permissionIds,
+        status: form.status,
+      });
+      if (!parsed.success) {
+        setEditFieldErrors(mapZodErrorToClientUserFormFieldErrors(parsed.error));
+        return;
+      }
+      setEditFieldErrors(undefined);
+      setIsSavingEdit(true);
+      try {
+        await updateTenantUserPermissionsFn(editingRow.id, {
+          permissionIds: parsed.data.permissionIds,
+        });
+        await patchTenantUserStatusFn(editingRow.id, {
+          isActive: parsed.data.status === "active",
+        });
+        toast.success("Usuário atualizado com sucesso.");
+        setEditingRow(null);
+        await qc.invalidateQueries({ queryKey: ["tenant", "users"] });
+      } catch (e: unknown) {
+        if (isAxiosError(e) && e.response?.status === 409) {
+          toast.error("Conflito ao atualizar usuário.");
+          return;
+        }
+        toast.error(getErrorMessage(e, "Não foi possível atualizar o usuário."));
+      } finally {
+        setIsSavingEdit(false);
+      }
+    },
+    [editingRow, qc]
+  );
 
   return (
     <section className="space-y-3">
@@ -81,8 +174,8 @@ export default function ClientUsersPage() {
             loading={isLoading}
             rows={paginatedItems}
             hideTitle
-            onEdit={() => { }}
-            onDelete={() => { }}
+            onEdit={(row) => setEditingRow(row)}
+            onDelete={handleDelete}
           />
           <TablePaginationBar
             totalItems={totalItems}
@@ -94,6 +187,39 @@ export default function ClientUsersPage() {
           />
         </>
       )}
+
+      <Dialog
+        open={editingRow !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingRow(null);
+            setEditFieldErrors(undefined);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+          </DialogHeader>
+          {editingRow ? (
+            <ClientUserFormUI
+              mode="edit"
+              formId="client-user-edit-form"
+              hideSubmitButton={false}
+              permissionOptions={DEFAULT_PERMISSION_OPTIONS}
+              values={{
+                name: editingRow.name,
+                email: editingRow.email,
+                status: editingRow.status,
+                permissionIds: editingRow.permissionLabels,
+              }}
+              fieldErrors={editFieldErrors}
+              isLoading={isSavingEdit}
+              onSubmit={handleEditSubmit}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

@@ -8,7 +8,23 @@ import {
   getTenantDb,
   toTenantDatabaseName,
 } from "@/infra/database/tenant/connection-manager.js";
+import { runCoreTenantMigrations } from "@/infra/database/tenant/migrator.js";
 import type { TenantMasterRepository } from "@/shared/repositories/tenant-master.repository.js";
+
+const migrationsByDatabase = new Map<string, Promise<void>>();
+
+async function ensureTenantCoreSchema(databaseName: string): Promise<void> {
+  let p = migrationsByDatabase.get(databaseName);
+  if (!p) {
+    p = runCoreTenantMigrations(databaseName)
+      .catch((error) => {
+        migrationsByDatabase.delete(databaseName);
+        throw error;
+      });
+    migrationsByDatabase.set(databaseName, p);
+  }
+  await p;
+}
 
 /**
  * Após `requireAuth`, resolve o Tenant DB:
@@ -40,6 +56,7 @@ export function createResolveTenantDbMiddleware(repo: TenantMasterRepository) {
           return next(new ForbiddenError("Empresa inativa."));
         }
         const databaseName = toTenantDatabaseName(tenant.dbName);
+        await ensureTenantCoreSchema(databaseName);
         req.tenantDb = getTenantDb(databaseName);
         req.tenantContext = {
           tenantId: tenant.id,
@@ -62,6 +79,7 @@ export function createResolveTenantDbMiddleware(repo: TenantMasterRepository) {
       }
 
       const databaseName = toTenantDatabaseName(tenant.dbName);
+      await ensureTenantCoreSchema(databaseName);
       req.tenantDb = getTenantDb(databaseName);
       req.tenantContext = {
         tenantId: tenant.id,

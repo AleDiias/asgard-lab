@@ -1,4 +1,5 @@
-CREATE TYPE "public"."lead_status" AS ENUM('novo', 'em_atendimento', 'finalizado');--> statement-breakpoint
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE TYPE "public"."lead_status" AS ENUM('novo', 'em_atendimento', 'finalizado');
 CREATE TABLE "leads" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
