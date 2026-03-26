@@ -66,7 +66,7 @@ const TABLE_COL_COUNT = 5;
 export function ClientUserListUI({
   rows,
   loading = false,
-  loadingMessage = "A carregar utilizadores…",
+  loadingMessage = "A carregar usuários…",
   labels: labelsProp,
   emptyMessage = "Nenhum usuário localizado.",
   onEdit,
@@ -137,81 +137,81 @@ export function ClientUserListUI({
             {tableHeader}
             <TableBody>
               {rows.map((row) => (
-                  <TableRow key={row.id} className="even:bg-muted/20">
-                    <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell>{row.email}</TableCell>
-                    <TableCell>{row.role ?? "—"}</TableCell>
-                    <TableCell className="align-middle text-center">
-                      {row.permissionLabels.length === 0 ? (
-                        <span className="text-muted-foreground">{labels.emptyPermissions}</span>
-                      ) : (
-                        <Tooltip delayDuration={200}>
-                          <TooltipTrigger asChild>
-                            <div className="flex cursor-default flex-wrap items-center justify-center gap-1 px-0.5">
-                              {row.permissionLabels
-                                .slice(0, MAX_PERMISSION_BADGES)
-                                .map((permLabel, idx) => (
-                                  <Badge
-                                    key={`${row.id}-perm-${idx}`}
-                                    variant="outline"
-                                    size="md"
-                                    className="max-w-[120px] truncate font-normal"
-                                  >
-                                    {permLabel}
-                                  </Badge>
-                                ))}
-                              {row.permissionLabels.length > MAX_PERMISSION_BADGES ? (
+                <TableRow key={row.id} className="even:bg-muted/20">
+                  <TableCell className="font-medium">{row.name}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.role ?? "—"}</TableCell>
+                  <TableCell className="align-middle text-center">
+                    {row.permissionLabels.length === 0 ? (
+                      <span className="text-muted-foreground">{labels.emptyPermissions}</span>
+                    ) : (
+                      <Tooltip delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          <div className="flex cursor-default flex-wrap items-center justify-center gap-1 px-0.5">
+                            {row.permissionLabels
+                              .slice(0, MAX_PERMISSION_BADGES)
+                              .map((permLabel, idx) => (
                                 <Badge
-                                  variant="secondary"
+                                  key={`${row.id}-perm-${idx}`}
+                                  variant="outline"
                                   size="md"
-                                  className="shrink-0 font-normal"
+                                  className="max-w-[120px] truncate font-normal"
                                 >
-                                  {labels.morePermissions.replace(
-                                    "{count}",
-                                    String(row.permissionLabels.length - MAX_PERMISSION_BADGES)
-                                  )}
+                                  {permLabel}
                                 </Badge>
-                              ) : null}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs border-border bg-popover px-3 py-2">
-                            <p className="mb-1.5 text-xs font-medium text-foreground">
-                              {labels.columnPermissions}
-                            </p>
-                            <ul className="list-inside list-disc space-y-0.5 text-left text-xs text-popover-foreground">
-                              {row.permissionLabels.map((permLabel, tipIdx) => (
-                                <li key={`${row.id}-tip-${tipIdx}`}>{permLabel}</li>
                               ))}
-                            </ul>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="inline-flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
-                          onClick={() => onEdit(row)}
-                          aria-label={labels.edit}
-                        >
-                          <Pencil className="h-4 w-4" aria-hidden />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => onDelete(row)}
-                          aria-label={labels.delete}
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                            {row.permissionLabels.length > MAX_PERMISSION_BADGES ? (
+                              <Badge
+                                variant="secondary"
+                                size="md"
+                                className="shrink-0 font-normal"
+                              >
+                                {labels.morePermissions.replace(
+                                  "{count}",
+                                  String(row.permissionLabels.length - MAX_PERMISSION_BADGES)
+                                )}
+                              </Badge>
+                            ) : null}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs border-border bg-popover px-3 py-2">
+                          <p className="mb-1.5 text-xs font-medium text-foreground">
+                            {labels.columnPermissions}
+                          </p>
+                          <ul className="list-inside list-disc space-y-0.5 text-left text-xs text-popover-foreground">
+                            {row.permissionLabels.map((permLabel, tipIdx) => (
+                              <li key={`${row.id}-tip-${tipIdx}`}>{permLabel}</li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        onClick={() => onEdit(row)}
+                        aria-label={labels.edit}
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => onDelete(row)}
+                        aria-label={labels.delete}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>

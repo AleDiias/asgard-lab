@@ -60,6 +60,25 @@ function isUsersRelationMissing(error: unknown): boolean {
   return message.includes('relation "users" does not exist');
 }
 
+async function ensureUsersTableExists(db: ReturnType<typeof getTenantDb>): Promise<void> {
+  await db.execute(sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "users" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "name" text NOT NULL,
+      "email" text NOT NULL,
+      "password_hash" text,
+      "role" text NOT NULL,
+      "permissions" jsonb DEFAULT '[]'::jsonb NOT NULL,
+      "is_active" boolean DEFAULT true NOT NULL,
+      "password_reset_token" text,
+      "password_reset_token_expires_at" timestamp with time zone,
+      "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+      CONSTRAINT "users_email_unique" UNIQUE("email")
+    );
+  `);
+}
+
 export class UserRepositoryDrizzle implements UserRepository {
   private tenantDb(tenantId: string) {
     if (tenantId === MASTER_TENANT_ID) {
@@ -87,6 +106,7 @@ export class UserRepositoryDrizzle implements UserRepository {
       if (!isUsersRelationMissing(error)) {
         throw error;
       }
+      await ensureUsersTableExists(db);
       await runTenantMigrations(dbName);
       return await operation(db);
     }
