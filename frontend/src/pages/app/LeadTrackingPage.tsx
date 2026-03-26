@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Upload } from "lucide-react";
 import { ActionBar, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { getLeadMetricsFn, listImportBatchesFn, listLeadsFn } from "@/api/core/leads.api";
+import { toast } from "sonner";
+import { TablePaginationBar } from "@/components/ui/table";
+import { deleteLeadFn, getLeadMetricsFn, listImportBatchesFn, listLeadsFn } from "@/api/core/leads.api";
 import {
   buildLeadTrackingFiltersApplySchema,
   mapLeadTrackingFiltersFieldErrors,
@@ -22,10 +24,12 @@ import {
 import type { LeadImportBatchRecord } from "@/types/core-leads.types";
 import { useAuthStore } from "@/stores/auth.store";
 import { canAccessLeadsImport } from "@/utils/asgard-access";
+import { getErrorMessage } from "@/utils/feedback";
 
 const PAGE_SIZE = 25;
 
 export default function LeadTrackingPage() {
+  const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const showImport = canAccessLeadsImport(user);
 
@@ -81,18 +85,35 @@ export default function LeadTrackingPage() {
     setPage(1);
   }, [batchesData?.items, draftImportBatchId]);
 
-  const batchById = useMemo(() => {
-    const m = new Map<string, LeadImportBatchRecord>();
-    for (const b of batchesData?.items ?? []) {
-      m.set(b.id, b);
-    }
-    return m;
-  }, [batchesData]);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteLeadFn(id),
+    onSuccess: async () => {
+      toast.success("Contato excluído com sucesso.");
+      await qc.invalidateQueries({ queryKey: ["lead-metrics"] });
+      await qc.invalidateQueries({ queryKey: ["leads-list"] });
+      await qc.invalidateQueries({ queryKey: ["leads-importados-panel"] });
+      await qc.invalidateQueries({ queryKey: ["import-batches-options"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(getErrorMessage(e, "Não foi possível excluir o contato."));
+    },
+  });
 
-  const removidosBatches = useMemo(
-    () => (batchesData?.items ?? []).filter((b) => b.removedCount > 0),
-    [batchesData]
-  );
+  const removidosBatches = useMemo(() => {
+    const all = batchesData?.items ?? [];
+    if (appliedImportBatchId === "all") {
+      return all.filter((b) => b.removedCount > 0);
+    }
+    return all.filter((b) => b.id === appliedImportBatchId && b.removedCount > 0);
+  }, [batchesData, appliedImportBatchId]);
+
+  const importedBatches = useMemo(() => {
+    const all = batchesData?.items ?? [];
+    if (appliedImportBatchId === "all") {
+      return all.filter((b) => b.importedCount > 0);
+    }
+    return all.filter((b) => b.id === appliedImportBatchId && b.importedCount > 0);
+  }, [batchesData, appliedImportBatchId]);
 
   useEffect(() => {
     const items = batchesData?.items ?? [];
@@ -121,27 +142,7 @@ export default function LeadTrackingPage() {
       }),
   });
 
-  const { data: importedPanelData, isLoading: loadingImportedPanel } = useQuery({
-    queryKey: [
-      "leads-importados-panel",
-      qDebounced,
-      appliedImportBatchId,
-    ],
-    queryFn: () =>
-      listLeadsFn({
-        page: 1,
-        pageSize: 200,
-        q: qDebounced || undefined,
-        importBatchId: appliedImportBatchId === "all" ? undefined : appliedImportBatchId,
-        sort: "created_at_desc",
-      }),
-    enabled: importadosOpen,
-  });
-
-  const importedLeads = useMemo(
-    () => (importedPanelData?.items ?? []).filter((l) => l.importBatchId != null),
-    [importedPanelData]
-  );
+  const loadingImportedPanel = false;
 
   const items = leadsData?.items ?? [];
   const total = leadsData?.total ?? 0;
@@ -182,33 +183,21 @@ export default function LeadTrackingPage() {
               onSearchChange={setQInput}
               sort={sortState}
               onSortChange={handleSortColumn}
+              onDelete={(row) => {
+                const ok = window.confirm(`Excluir o contato ${row.name}?`);
+                if (!ok) return;
+                deleteMutation.mutate(row.id);
+              }}
             />
             {total > 0 ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>
-                  {total.toLocaleString("pt-PT")} registo(s) · Página {page} de {totalPages}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1 || leadsLoading}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages || leadsLoading}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  >
-                    Seguinte
-                  </Button>
-                </div>
-              </div>
+              <TablePaginationBar
+                totalItems={total}
+                page={page}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                onPageSizeChange={() => {}}
+                className="mt-2 rounded-lg border border-border"
+              />
             ) : null}
           </CardContent>
         </Card>
@@ -224,8 +213,7 @@ export default function LeadTrackingPage() {
           />
 
           <LeadsByFilePanelUI
-            importedLeads={importedLeads}
-            batchById={batchById}
+            importedBatches={importedBatches}
             removidosBatches={removidosBatches}
             loadingImported={loadingImportedPanel}
             importadosOpen={importadosOpen}

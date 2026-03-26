@@ -68,6 +68,13 @@ export class LeadService {
     return lead;
   }
 
+  async remove(db: TenantDb, id: string): Promise<void> {
+    const ok = await this.leadRepo.remove(db, id);
+    if (!ok) {
+      throw new NotFoundError("Lead não encontrado.");
+    }
+  }
+
   async update(db: TenantDb, id: string, body: UpdateLeadBody): Promise<LeadRow> {
     const existing = await this.leadRepo.findById(db, id);
     if (!existing) {

@@ -45,6 +45,11 @@ export class LeadRepositoryDrizzle implements LeadRepository {
     return row ?? null;
   }
 
+  async remove(db: TenantDb, id: string): Promise<boolean> {
+    const deleted = await db.delete(leads).where(eq(leads.id, id)).returning({ id: leads.id });
+    return deleted.length > 0;
+  }
+
   async list(db: TenantDb, params: LeadListParams): Promise<LeadListResult> {
     const conditions = [];
 

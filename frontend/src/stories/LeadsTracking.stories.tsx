@@ -121,6 +121,7 @@ function ContactosComDadosStory() {
         onSearchChange={setQ}
         sort={sort}
         onSortChange={(col: LeadSortableColumn) => setSort((prev) => cycleLeadTableSort(col, prev))}
+        onDelete={() => {}}
       />
     </div>
   );
@@ -136,6 +137,7 @@ function ContactosVazioStory() {
         onSearchChange={setQ}
         sort={defaultSort}
         onSortChange={() => { }}
+        onDelete={() => {}}
         emptyLabel="Sem contatos para exibir."
       />
     </div>
@@ -164,6 +166,7 @@ export const ContactosLoading: Story = {
         onSearchChange={() => { }}
         sort={defaultSort}
         onSortChange={() => { }}
+        onDelete={() => {}}
       />
     </div>
   ),
@@ -192,15 +195,13 @@ export const FiltrosCard: Story = {
 function PainelPorFicheiroDemo() {
   const [io, setIo] = useState(true);
   const [ro, setRo] = useState(false);
-  const batchById = new Map(sampleBatches.map((b) => [b.id, b]));
   const removidos = sampleBatches.filter((b) => b.removedCount > 0);
-  const imported = sampleLeads.filter((l) => l.importBatchId);
+  const imported = sampleBatches.filter((b) => b.importedCount > 0);
 
   return (
     <div className="max-w-xl">
       <LeadsByFilePanelUI
-        importedLeads={imported}
-        batchById={batchById}
+        importedBatches={imported}
         removidosBatches={removidos}
         importadosOpen={io}
         onImportadosOpenChange={setIo}
@@ -223,9 +224,8 @@ function LayoutCompletoDemo() {
   const [draft, setDraft] = useState<string | "all">("all");
   const [io, setIo] = useState(false);
   const [ro, setRo] = useState(false);
-  const batchById = new Map(sampleBatches.map((b) => [b.id, b]));
   const removidos = sampleBatches.filter((b) => b.removedCount > 0);
-  const imported = sampleLeads.filter((l) => l.importBatchId);
+  const imported = sampleBatches.filter((b) => b.importedCount > 0);
 
   return (
     <section className="mx-auto max-w-7xl space-y-6">
@@ -261,6 +261,7 @@ function LayoutCompletoDemo() {
               onSortChange={(col: LeadSortableColumn) =>
                 setSort((prev) => cycleLeadTableSort(col, prev))
               }
+              onDelete={() => {}}
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
               <span>3 registo(s) · Página 1 de 1</span>
@@ -284,8 +285,7 @@ function LayoutCompletoDemo() {
             onApply={() => { }}
           />
           <LeadsByFilePanelUI
-            importedLeads={imported}
-            batchById={batchById}
+            importedBatches={imported}
             removidosBatches={removidos}
             importadosOpen={io}
             onImportadosOpenChange={setIo}

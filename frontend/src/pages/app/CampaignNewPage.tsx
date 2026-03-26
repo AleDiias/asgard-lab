@@ -11,9 +11,11 @@ import {
   campaignsScreen,
 } from "@/components/screens/campaigns";
 import { createCampaignFn } from "@/api/core/campaigns.api";
+import { listImportBatchesFn } from "@/api/core/leads.api";
 import { listIntegrationsFn } from "@/api/core/integrations.api";
 import { useAuthStore } from "@/stores/auth.store";
 import { canAccessCampaignsWrite } from "@/utils/asgard-access";
+import { syncCampaignLeadsFn } from "@/api/core/campaigns.api";
 const CAMPAIGN_NEW_FORM_ID = "campaign-new-form";
 
 export default function CampaignNewPage() {
@@ -24,18 +26,31 @@ export default function CampaignNewPage() {
 
   const [name, setName] = useState("");
   const [integrationId, setIntegrationId] = useState(CAMPAIGN_INTEGRATION_NONE);
+  const [importBatchId, setImportBatchId] = useState(CAMPAIGN_INTEGRATION_NONE);
 
   const { data: integrations = [] } = useQuery({
     queryKey: ["integrations-active"],
     queryFn: () => listIntegrationsFn({ activeOnly: true }),
   });
 
+  const { data: importBatchesData } = useQuery({
+    queryKey: ["campaign-new-import-batches"],
+    queryFn: () => listImportBatchesFn({ page: 1, pageSize: 100 }),
+  });
+
   const activeIntegrations = integrations.filter((i) => i.isActive);
 
   const createMutation = useMutation({
     mutationFn: createCampaignFn,
-    onSuccess: () => {
-      toast.success("Campanha criada.");
+    onSuccess: async (created) => {
+      if (importBatchId !== CAMPAIGN_INTEGRATION_NONE) {
+        await syncCampaignLeadsFn(created.id, { importBatchId });
+      }
+      toast.success(
+        importBatchId !== CAMPAIGN_INTEGRATION_NONE
+          ? "Campanha criada e leads sincronizados."
+          : "Campanha criada."
+      );
       void qc.invalidateQueries({ queryKey: ["campaigns"] });
       navigate(CAMPAIGN_ROUTES.list);
     },
@@ -96,6 +111,9 @@ export default function CampaignNewPage() {
           integrationId={integrationId}
           onIntegrationChange={setIntegrationId}
           integrations={activeIntegrations}
+          importBatches={importBatchesData?.items ?? []}
+          selectedImportBatchId={importBatchId}
+          onSelectedImportBatchIdChange={setImportBatchId}
           onSubmit={handleSubmit}
           formId={CAMPAIGN_NEW_FORM_ID}
           submitLabel="Criar campanha"

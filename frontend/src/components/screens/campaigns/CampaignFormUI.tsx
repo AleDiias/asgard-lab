@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { requiredLabel } from "@/validations";
 import type { IntegrationRecord } from "@/types/core-integrations.types";
 import type { CampaignStatus } from "@/types/core-campaigns.types";
+import type { LeadImportBatchRecord } from "@/types/core-leads.types";
 import { campaignStatusDotClass, labelCampaignStatus } from "./campaign-status";
 
 export const CAMPAIGN_INTEGRATION_NONE = "__none__";
@@ -33,6 +34,9 @@ export interface CampaignFormUIProps {
   integrationId: string;
   onIntegrationChange: (v: string) => void;
   integrations: IntegrationRecord[];
+  importBatches?: LeadImportBatchRecord[];
+  selectedImportBatchId?: string;
+  onSelectedImportBatchIdChange?: (v: string) => void;
   /** Número de leads associados (só leitura, modo edição). */
   leadsCount?: number;
   /** Estado da campanha (API). Em edição, se `syncing` ou `completed`, o ativo/inativo fica bloqueado. */
@@ -58,6 +62,9 @@ export function CampaignFormUI({
   integrationId,
   onIntegrationChange,
   integrations,
+  importBatches = [],
+  selectedImportBatchId = CAMPAIGN_INTEGRATION_NONE,
+  onSelectedImportBatchIdChange,
   leadsCount,
   campaignStatus,
   operationalActive = true,
@@ -85,6 +92,7 @@ export function CampaignFormUI({
     isEdit && leadsCount !== undefined ? String(leadsCount) : "—";
 
   const row1Cols = isEdit ? "md:grid-cols-4" : "md:grid-cols-3";
+  const row1CreateCols = isEdit ? row1Cols : "md:grid-cols-4";
 
   const formInner = (
     <>
@@ -95,7 +103,7 @@ export function CampaignFormUI({
         </div>
       ) : null}
 
-      <div className={cn("grid grid-cols-1 gap-4", row1Cols)}>
+      <div className={cn("grid grid-cols-1 gap-4", row1CreateCols)}>
         <div className="min-w-0 space-y-1">
           <Label htmlFor="campaign-name" className={LABEL_GAP}>
             {requiredLabel("Nome da campanha")}
@@ -147,6 +155,28 @@ export function CampaignFormUI({
             </p>
           ) : null}
         </div>
+        {!isEdit ? (
+          <div className="min-w-0 space-y-1">
+            <Label className={LABEL_GAP}>Lote de leads (opcional)</Label>
+            <Select
+              value={selectedImportBatchId}
+              onValueChange={(v) => onSelectedImportBatchIdChange?.(v)}
+              disabled={disabled}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CAMPAIGN_INTEGRATION_NONE}>Sem lote</SelectItem>
+                {importBatches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.fileName} ({b.importedCount})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         {isEdit ? (
           <div className="min-w-0 space-y-1">
             <Label className={LABEL_GAP}>Status</Label>

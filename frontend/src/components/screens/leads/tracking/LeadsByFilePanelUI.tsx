@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui";
-import type { LeadImportBatchRecord, LeadRecord } from "@/types/core-leads.types";
+import type { LeadImportBatchRecord } from "@/types/core-leads.types";
 import { cn } from "@/lib/utils";
 
 function formatDt(iso: string) {
@@ -28,15 +28,8 @@ function formatDt(iso: string) {
   }
 }
 
-const STATUS_LABEL: Record<LeadRecord["status"], string> = {
-  novo: "Novo",
-  em_atendimento: "Em atendimento",
-  finalizado: "Finalizado",
-};
-
 export interface LeadsByFilePanelUIProps {
-  importedLeads: LeadRecord[];
-  batchById: Map<string, LeadImportBatchRecord>;
+  importedBatches: LeadImportBatchRecord[];
   /** Lotes com `removedCount` &gt; 0 (duplicados não importados). */
   removidosBatches: LeadImportBatchRecord[];
   loadingImported?: boolean;
@@ -51,8 +44,7 @@ export interface LeadsByFilePanelUIProps {
  * Presentacional: painel em card com secções Importados / Removidos (colapsáveis).
  */
 export function LeadsByFilePanelUI({
-  importedLeads,
-  batchById,
+  importedBatches,
   removidosBatches,
   loadingImported,
   importadosOpen,
@@ -73,9 +65,9 @@ export function LeadsByFilePanelUI({
           <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-left text-sm font-semibold hover:bg-muted/50">
             <span>
               Importados
-              {importedLeads.length > 0 ? (
+              {importedBatches.length > 0 ? (
                 <span className="ml-1 font-normal text-muted-foreground">
-                  ({importedLeads.length.toLocaleString("pt-PT")})
+                  ({importedBatches.reduce((acc, b) => acc + b.importedCount, 0).toLocaleString("pt-PT")})
                 </span>
               ) : null}
             </span>
@@ -91,7 +83,7 @@ export function LeadsByFilePanelUI({
             <div className="pt-3">
               {loadingImported ? (
                 <p className="text-sm text-muted-foreground">A carregar…</p>
-              ) : importedLeads.length === 0 ? (
+              ) : importedBatches.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Nenhum contacto importado por arquivo com os filtros actuais.
                 </p>
@@ -102,23 +94,21 @@ export function LeadsByFilePanelUI({
                       <TableRow>
                         <TableHead>Nome do arquivo</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Contactos importados</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {importedLeads.map((row) => {
-                        const fileName =
-                          (row.importBatchId && batchById.get(row.importBatchId)?.fileName) ?? "—";
-                        return (
-                          <TableRow key={row.id}>
-                            <TableCell className="font-medium">{fileName}</TableCell>
+                      {importedBatches.map((b) => (
+                          <TableRow key={b.id}>
+                            <TableCell className="font-medium">{b.fileName}</TableCell>
                             <TableCell className="text-muted-foreground">
-                              {formatDt(row.createdAt)}
+                              {formatDt(b.createdAt)}
                             </TableCell>
-                            <TableCell>{STATUS_LABEL[row.status]}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {b.importedCount.toLocaleString("pt-PT")}
+                            </TableCell>
                           </TableRow>
-                        );
-                      })}
+                      ))}
                     </TableBody>
                   </Table>
                 </div>

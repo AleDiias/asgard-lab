@@ -51,6 +51,7 @@ export interface ImportBatchListResult {
 export interface LeadRepository {
   create(db: TenantDb, data: LeadInsert): Promise<LeadRow>;
   findById(db: TenantDb, id: string): Promise<LeadRow | null>;
+  remove(db: TenantDb, id: string): Promise<boolean>;
   list(db: TenantDb, params: LeadListParams): Promise<LeadListResult>;
   update(db: TenantDb, id: string, data: LeadUpdateFields): Promise<LeadRow | null>;
   bulkInsertSkipDuplicatePhones(db: TenantDb, rows: LeadInsert[]): Promise<number>;

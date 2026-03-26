@@ -103,3 +103,11 @@ export async function listImportBatchesFn(params: {
   assertSuccess(data);
   return data.data;
 }
+
+export async function deleteLeadFn(id: string): Promise<void> {
+  const { data } = await coreApiClient.delete<
+    | { success: true; data: { ok: true } }
+    | { success: false; error: { message: string } }
+  >(`/api/v1/leads/${id}`);
+  assertSuccess(data);
+}

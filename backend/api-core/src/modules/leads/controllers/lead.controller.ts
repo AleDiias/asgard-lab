@@ -104,4 +104,18 @@ export class LeadController {
       next(e);
     }
   };
+
+  remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = leadIdParamSchema.parse(req.params);
+      const db = requireTenantDb(req);
+      await this.leadService.remove(db, id);
+      res.status(200).json({
+        success: true,
+        data: { ok: true },
+      });
+    } catch (e) {
+      next(e);
+    }
+  };
 }

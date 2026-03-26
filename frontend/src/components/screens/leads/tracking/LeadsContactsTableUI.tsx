@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Settings2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Settings2, Trash2 } from "lucide-react";
 import {
   Button,
   Checkbox,
@@ -83,6 +83,7 @@ export interface LeadsContactsTableUIProps {
   onSearchChange: (value: string) => void;
   sort: LeadTableSortState;
   onSortChange: (column: LeadSortableColumn) => void;
+  onDelete: (row: LeadRecord) => void;
   className?: string;
 }
 
@@ -107,6 +108,7 @@ export function LeadsContactsTableUI({
   onSearchChange,
   sort,
   onSortChange,
+  onDelete,
   className,
 }: LeadsContactsTableUIProps) {
   const [visible, setVisible] = useState<LeadContactColumnKey[]>(loadVisibleColumns);
@@ -131,7 +133,7 @@ export function LeadsContactsTableUI({
     [visible]
   );
 
-  const colSpan = Math.max(orderedVisible.length, 1);
+  const colSpan = Math.max(orderedVisible.length + 1, 1);
 
   const headerCell = (key: LeadContactColumnKey, sortable: boolean) => {
     const label = COLUMN_LABEL[key];
@@ -216,6 +218,7 @@ export function LeadsContactsTableUI({
                   )}
                 </TableHead>
               ))}
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -249,6 +252,18 @@ export function LeadsContactsTableUI({
                       {key === "createdAt" && formatDt(row.createdAt)}
                     </TableCell>
                   ))}
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Excluir contato"
+                      onClick={() => onDelete(row)}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}

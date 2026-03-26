@@ -56,3 +56,8 @@ leadsRouter.put(
   requirePermission([PERMISSION_LEADS_WRITE]),
   leadController.update
 );
+leadsRouter.delete(
+  "/:id",
+  requirePermission([PERMISSION_LEADS_WRITE]),
+  leadController.remove
+);
