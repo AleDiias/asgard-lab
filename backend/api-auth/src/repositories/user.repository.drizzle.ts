@@ -382,6 +382,24 @@ export class UserRepositoryDrizzle implements UserRepository {
       .where(eq(users.id, userId));
   }
 
+  async updateTenantUserRole(
+    tenantId: string,
+    userId: string,
+    role: string
+  ): Promise<void> {
+    if (tenantId === MASTER_TENANT_ID) {
+      return;
+    }
+    const db = await this.tenantDb(tenantId);
+    if (!db) {
+      return;
+    }
+    await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, userId));
+  }
+
   async setTenantUserActive(
     tenantId: string,
     userId: string,

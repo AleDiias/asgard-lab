@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-pagination-slice";
 import {
   CLIENT_USERS_ROUTES,
+  ClientUserFormUI,
   ClientUserListUI,
   clientUsersScreen,
 } from "@/components/screens/client-users";
@@ -21,6 +22,8 @@ import type { ClientUserFormFieldErrors, ClientUserFormValues } from "@/componen
 import { listTenantUsersFn, patchTenantUserStatusFn, updateTenantUserPermissionsFn } from "@/api/admin/admin.api";
 import type { TenantUserRecord } from "@/types/admin.types";
 import { getErrorMessage } from "@/utils/feedback";
+import { isAsgardInternalUser } from "@/utils/asgard-access";
+import { useAuthStore } from "@/stores/auth.store";
 import {
   clientUserEditFormSchema,
   mapZodErrorToClientUserFormFieldErrors,
@@ -47,6 +50,11 @@ const DEFAULT_PERMISSION_OPTIONS = [
   { id: PERMISSION_INTEGRATIONS_WRITE, label: "Integracoes - configurar" },
 ];
 
+const PERMISSION_LABEL: Record<string, string> = Object.fromEntries(
+  DEFAULT_PERMISSION_OPTIONS.map((p) => [p.id, p.label])
+);
+const translatePermission = (permission: string): string => PERMISSION_LABEL[permission] ?? permission;
+
 function mapToRow(u: TenantUserRecord): ClientUserListRow {
   return {
     id: u.id,
@@ -54,7 +62,7 @@ function mapToRow(u: TenantUserRecord): ClientUserListRow {
     email: u.email,
     role: u.role,
     status: u.isActive ? "active" : "inactive",
-    permissionLabels: u.permissions,
+    permissionLabels: u.permissions.map(translatePermission),
   };
 }
 
@@ -63,6 +71,8 @@ export default function ClientUsersPage() {
   const [editingRow, setEditingRow] = useState<ClientUserListRow | null>(null);
   const [editFieldErrors, setEditFieldErrors] = useState<ClientUserFormFieldErrors | undefined>();
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const authUser = useAuthStore((s) => s.user);
+  const canManageRole = isAsgardInternalUser(authUser);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["tenant", "users"],
@@ -107,6 +117,7 @@ export default function ClientUsersPage() {
       const parsed = clientUserEditFormSchema.safeParse({
         name: form.name,
         email: form.email,
+        role: form.role,
         permissionIds: form.permissionIds,
         status: form.status,
       });
@@ -119,6 +130,7 @@ export default function ClientUsersPage() {
       try {
         await updateTenantUserPermissionsFn(editingRow.id, {
           permissionIds: parsed.data.permissionIds,
+          role: canManageRole ? parsed.data.role : undefined,
         });
         await patchTenantUserStatusFn(editingRow.id, {
           isActive: parsed.data.status === "active",
@@ -136,7 +148,7 @@ export default function ClientUsersPage() {
         setIsSavingEdit(false);
       }
     },
-    [editingRow, qc]
+    [canManageRole, editingRow, qc]
   );
 
   return (
@@ -210,11 +222,15 @@ export default function ClientUsersPage() {
               values={{
                 name: editingRow.name,
                 email: editingRow.email,
+                role: (editingRow.role as "admin" | "user") ?? "user",
                 status: editingRow.status,
-                permissionIds: editingRow.permissionLabels,
+                permissionIds: (data ?? [])
+                  .find((u) => u.id === editingRow.id)
+                  ?.permissions.map((p) => p) ?? [],
               }}
               fieldErrors={editFieldErrors}
               isLoading={isSavingEdit}
+              showRoleField={canManageRole}
               onSubmit={handleEditSubmit}
             />
           ) : null}

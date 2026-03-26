@@ -5,6 +5,7 @@ import type { ClientUserFormFieldErrors } from "@/components/screens/client-user
 const base = z.object({
   name: z.string().min(1, "Informe o nome."),
   email: z.string().min(1, "Informe o e-mail.").email("E-mail inválido."),
+  role: z.enum(["admin", "user"]),
   permissionIds: z.array(z.string()).min(1, "Selecione ao menos uma permissão."),
 });
 
@@ -19,7 +20,7 @@ export function mapZodErrorToClientUserFormFieldErrors(
 ): ClientUserFormFieldErrors {
   const fieldErrors: ClientUserFormFieldErrors = {};
   const flat = error.flatten().fieldErrors;
-  const keys = ["name", "email", "permissionIds", "status"] as const;
+  const keys = ["name", "email", "role", "permissionIds", "status"] as const;
   for (const key of keys) {
     const msg = flat[key]?.[0];
     if (msg) {

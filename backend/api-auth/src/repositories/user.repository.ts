@@ -39,6 +39,7 @@ export interface UserRepository {
     userId: string
   ): Promise<(UserEntity & { name: string; isActive: boolean }) | null>;
   updateTenantUserPermissions(tenantId: string, userId: string, permissions: string[]): Promise<void>;
+  updateTenantUserRole(tenantId: string, userId: string, role: string): Promise<void>;
   setTenantUserActive(tenantId: string, userId: string, isActive: boolean): Promise<void>;
 }
 

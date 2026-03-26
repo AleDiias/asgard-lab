@@ -19,6 +19,8 @@ import {
 import { inviteTenantUserFn } from "@/api/admin/admin.api";
 import { getErrorMessage, successMessages } from "@/utils/feedback";
 import type { ClientUserPermissionOption } from "@/components/screens/client-users";
+import { useAuthStore } from "@/stores/auth.store";
+import { isAsgardInternalUser } from "@/utils/asgard-access";
 import {
   PERMISSION_CAMPAIGNS_READ,
   PERMISSION_CAMPAIGNS_WRITE,
@@ -46,6 +48,8 @@ const CLIENT_USER_NEW_FORM_ID = "client-user-new-form";
 
 export default function ClientUserNewPage() {
   const navigate = useNavigate();
+  const authUser = useAuthStore((s) => s.user);
+  const canManageRole = isAsgardInternalUser(authUser);
   const [fieldErrors, setFieldErrors] = useState<ClientUserFormFieldErrors | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,6 +58,7 @@ export default function ClientUserNewPage() {
       const parsed = clientUserNewFormSchema.safeParse({
         name: data.name,
         email: data.email,
+        role: data.role,
         permissionIds: data.permissionIds,
       });
       if (!parsed.success) {
@@ -66,6 +71,7 @@ export default function ClientUserNewPage() {
         const result = await inviteTenantUserFn({
           name: parsed.data.name.trim(),
           email: parsed.data.email.trim().toLowerCase(),
+          role: canManageRole ? parsed.data.role : undefined,
           permissionIds: [...parsed.data.permissionIds],
         });
         toast.success(successMessages.inviteSent(result.email));
@@ -82,7 +88,7 @@ export default function ClientUserNewPage() {
         setIsLoading(false);
       }
     },
-    [navigate]
+    [canManageRole, navigate]
   );
 
   return (
@@ -118,6 +124,7 @@ export default function ClientUserNewPage() {
           permissionOptions={DEFAULT_PERMISSION_OPTIONS}
           fieldErrors={fieldErrors}
           isLoading={isLoading}
+          showRoleField={canManageRole}
           onSubmit={handleSubmit}
           hideTitle
         />

@@ -3,6 +3,7 @@ import type { ActiveInactiveStatus } from "@/lib/status";
 export interface ClientUserFormValues {
   name: string;
   email: string;
+  role: "admin" | "user";
   /** Ativar ou inativar acesso (apenas em modo edição; novo usuário é sempre ativo até definir). */
   status: ActiveInactiveStatus;
   /** IDs das permissões marcadas */
@@ -31,6 +32,7 @@ export interface ClientUserListRow {
 export interface ClientUserFormFieldErrors {
   name?: string;
   email?: string;
+  role?: string;
   status?: string;
   permissions?: string;
 }

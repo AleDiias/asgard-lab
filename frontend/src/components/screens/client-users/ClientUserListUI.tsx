@@ -19,6 +19,10 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { ClientUserListRow } from "./types";
 
 const MAX_PERMISSION_BADGES = 2;
+const ROLE_LABEL: Record<string, string> = {
+  admin: "Administrador",
+  user: "Usuário",
+};
 
 export interface ClientUserListUILabels {
   title?: string;
@@ -140,7 +144,7 @@ export function ClientUserListUI({
                 <TableRow key={row.id} className="even:bg-muted/20">
                   <TableCell className="font-medium">{row.name}</TableCell>
                   <TableCell>{row.email}</TableCell>
-                  <TableCell>{row.role ?? "—"}</TableCell>
+                  <TableCell>{row.role ? ROLE_LABEL[row.role] ?? row.role : "—"}</TableCell>
                   <TableCell className="align-middle text-center">
                     {row.permissionLabels.length === 0 ? (
                       <span className="text-muted-foreground">{labels.emptyPermissions}</span>

@@ -61,6 +61,7 @@ class UserRepoStub implements UserRepository {
   }
 
   async updateTenantUserPermissions(): Promise<void> {}
+  async updateTenantUserRole(): Promise<void> {}
 
   async setTenantUserActive(): Promise<void> {}
 }

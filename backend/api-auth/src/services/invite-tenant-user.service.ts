@@ -15,6 +15,7 @@ export interface InviteTenantUserInput {
   name: string;
   email: string;
   permissionIds: string[];
+  role?: "admin" | "user";
 }
 
 export class InviteTenantUserService {
@@ -45,7 +46,7 @@ export class InviteTenantUserService {
     await this.userRepo.createInvitedUser(tenant.id, {
       name: input.name.trim(),
       email,
-      role: "user",
+      role: input.role ?? "user",
       permissions: [...input.permissionIds],
     });
 

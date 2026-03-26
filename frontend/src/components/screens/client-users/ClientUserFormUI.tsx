@@ -36,6 +36,9 @@ export interface ClientUserFormUILabels {
   name?: string;
   email?: string;
   status?: string;
+  role?: string;
+  roleAdmin?: string;
+  roleUser?: string;
   statusActive?: string;
   statusInactive?: string;
   permissionsSection?: string;
@@ -50,6 +53,9 @@ export const clientUserFormUiDefaultLabels: Required<ClientUserFormUILabels> = {
   name: "Nome",
   email: "E-mail",
   status: "Status",
+  role: "Função",
+  roleAdmin: "Administrador",
+  roleUser: "Usuário",
   statusActive: "Ativo",
   statusInactive: "Inativo",
   permissionsSection: "Permissões de acesso",
@@ -74,6 +80,7 @@ export interface ClientUserFormUIProps {
   /** Emissão unidirecional a cada alteração */
   onValueChange?: (next: ClientUserFormValues) => void;
   onSubmit: (data: ClientUserFormValues) => void;
+  showRoleField?: boolean;
   /** Quando `true`, não renderiza o título (ex.: ActionBar na página). */
   hideTitle?: boolean;
   /** `id` no `<form>` para submissão via botão na ActionBar (`<Button type="submit" form={formId} />`). */
@@ -92,6 +99,7 @@ function buildInitialState(
   return {
     name: seed?.name ?? "",
     email: seed?.email ?? "",
+    role: seed?.role ?? "user",
     status: seed?.status ?? "active",
     permissionIds,
   };
@@ -106,6 +114,7 @@ export function ClientUserFormUI({
   values: controlledValues,
   onValueChange,
   onSubmit,
+  showRoleField = false,
   hideTitle = false,
   formId,
   hideSubmitButton = false,
@@ -160,10 +169,10 @@ export function ClientUserFormUI({
     onSubmit(internal);
   };
 
-  const gridCols =
-    mode === "edit"
-      ? "grid-cols-1 gap-4 lg:grid-cols-4"
-      : "grid-cols-1 gap-4 lg:grid-cols-3";
+  const gridCols = (() => {
+    if (mode === "edit") return showRoleField ? "grid-cols-1 gap-4 lg:grid-cols-5" : "grid-cols-1 gap-4 lg:grid-cols-4";
+    return showRoleField ? "grid-cols-1 gap-4 lg:grid-cols-4" : "grid-cols-1 gap-4 lg:grid-cols-3";
+  })();
 
   return (
     <form
@@ -199,6 +208,38 @@ export function ClientUserFormUI({
             </p>
           ) : null}
         </div>
+
+        {showRoleField ? (
+          <div className="min-w-0 space-y-1">
+            <Label htmlFor="client-user-role" className={LABEL_GAP}>
+              {requiredLabel(labels.role)}
+            </Label>
+            <Select
+              value={internal.role}
+              onValueChange={(v) => emit({ ...internal, role: v as "admin" | "user" })}
+              disabled={isLoading}
+              required
+            >
+              <SelectTrigger
+                id="client-user-role"
+                className={cn(fieldErrors?.role && "border-destructive")}
+                aria-invalid={Boolean(fieldErrors?.role)}
+                aria-describedby={fieldErrors?.role ? "client-user-role-error" : undefined}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">{labels.roleAdmin}</SelectItem>
+                <SelectItem value="user">{labels.roleUser}</SelectItem>
+              </SelectContent>
+            </Select>
+            {fieldErrors?.role ? (
+              <p id="client-user-role-error" className="text-sm text-destructive" role="alert">
+                {fieldErrors.role}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="min-w-0 space-y-1">
           <Label htmlFor="client-user-email" className={LABEL_GAP}>

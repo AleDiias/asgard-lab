@@ -8,10 +8,12 @@ const inviteBodySchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   permissionIds: z.array(z.string()).min(1),
+  role: z.enum(["admin", "user"]).optional(),
 });
 
 const updatePermissionsSchema = z.object({
   permissionIds: z.array(z.string()),
+  role: z.enum(["admin", "user"]).optional(),
 });
 
 const patchStatusSchema = z.object({
@@ -51,6 +53,7 @@ export class TenantUsersController {
       name: parsed.name,
       email: parsed.email,
       permissionIds: parsed.permissionIds,
+      role: parsed.role,
     });
 
     res.status(201).json({
@@ -118,6 +121,7 @@ export class TenantUsersController {
       actorTenantId: user.tenantId,
       actorIsSuperAdmin: user.isSuperAdmin,
       actorPermissions: user.permissions ?? [],
+      role: parsed.role,
     });
 
     res.status(200).json({

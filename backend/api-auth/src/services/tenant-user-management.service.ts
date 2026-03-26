@@ -44,6 +44,7 @@ export class TenantUserManagementService {
     actorTenantId: string;
     actorIsSuperAdmin: boolean;
     actorPermissions: string[];
+    role?: "admin" | "user";
   }) {
     const tenant = await this.resolveTenantForActor(
       input.tenantDomain,
@@ -66,6 +67,9 @@ export class TenantUserManagementService {
       input.userId,
       input.permissionIds
     );
+    if (input.role) {
+      await this.userRepo.updateTenantUserRole(tenant.id, input.userId, input.role);
+    }
   }
 
   async setActive(input: {

@@ -75,6 +75,7 @@ export interface InviteTenantUserPayload {
   name: string;
   email: string;
   permissionIds: string[];
+  role?: "admin" | "user";
 }
 
 export interface InviteTenantUserResult {
@@ -94,6 +95,7 @@ export interface TenantUserRecord {
 
 export interface UpdateTenantUserPermissionsPayload {
   permissionIds: string[];
+  role?: "admin" | "user";
 }
 
 export interface PatchUserStatusPayload {
