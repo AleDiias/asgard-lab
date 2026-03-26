@@ -11,7 +11,22 @@ import {
   UnauthorizedError,
 } from "@/errors/app-error.js";
 
-const SUPER_ADMIN_DOMAIN = "@asgardai.com.br";
+const SUPER_ADMIN_DOMAINS = ["@asgardai.com.br", "@asgardai"];
+
+function isAsgardEmail(email: string): boolean {
+  return SUPER_ADMIN_DOMAINS.some((domain) => email.endsWith(domain));
+}
+
+function asgardEmailCandidates(email: string): string[] {
+  const normalized = email.trim().toLowerCase();
+  if (normalized.endsWith("@asgardai.com.br")) {
+    return [normalized, normalized.replace(/@asgardai\.com\.br$/, "@asgardai")];
+  }
+  if (normalized.endsWith("@asgardai")) {
+    return [normalized, `${normalized}.com.br`];
+  }
+  return [normalized];
+}
 const env = validateAndGetEnv();
 const JWT_SECRET = env.JWT_SECRET;
 const JWT_EXPIRES_IN = env.JWT_EXPIRES_IN;
@@ -46,9 +61,9 @@ export class AuthenticateUserService {
   async execute(input: AuthenticateInput): Promise<AuthResult> {
     const { email, password, tenantDomain } = input;
     const normalizedEmail = email.trim().toLowerCase();
-    const isAsgardEmail = normalizedEmail.endsWith(SUPER_ADMIN_DOMAIN);
+    const asgardEmail = isAsgardEmail(normalizedEmail);
 
-    if (isAsgardEmail) {
+    if (asgardEmail) {
       return this.authenticateAsgardEmployee(normalizedEmail, password);
     }
 
@@ -110,9 +125,14 @@ export class AuthenticateUserService {
     email: string,
     password: string
   ): Promise<AuthResult> {
-    const asgardUser = await this.asgardUserRepo.findByEmail(email);
+    const candidates = asgardEmailCandidates(email);
+    let asgardUser = null;
+    for (const candidate of candidates) {
+      asgardUser = await this.asgardUserRepo.findByEmail(candidate);
+      if (asgardUser) break;
+    }
     if (!asgardUser) {
-      logger.warn("Usuário Asgard não encontrado", { email });
+      logger.warn("Usuário Asgard não encontrado", { email, tried: candidates });
       throw new UnauthorizedError("Credenciais inválidas.");
     }
 

@@ -7,7 +7,22 @@ import { sendTokenEmail, type TokenEmailType } from "@/infra/email.js";
 import { ForbiddenError, NotFoundError } from "@/errors/app-error.js";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
-const SUPER_ADMIN_DOMAIN = "@asgardai.com.br";
+const SUPER_ADMIN_DOMAINS = ["@asgardai.com.br", "@asgardai"];
+
+function isAsgardEmail(email: string): boolean {
+  return SUPER_ADMIN_DOMAINS.some((domain) => email.endsWith(domain));
+}
+
+function asgardEmailCandidates(email: string): string[] {
+  const normalized = email.trim().toLowerCase();
+  if (normalized.endsWith("@asgardai.com.br")) {
+    return [normalized, normalized.replace(/@asgardai\.com\.br$/, "@asgardai")];
+  }
+  if (normalized.endsWith("@asgardai")) {
+    return [normalized, `${normalized}.com.br`];
+  }
+  return [normalized];
+}
 
 export interface ForgotPasswordInput {
   email: string;
@@ -25,10 +40,15 @@ export class ForgotPasswordService {
   async execute(input: ForgotPasswordInput): Promise<{ ok: true }> {
     const { email, tenantDomain, type = "forgot" } = input;
     const normalizedEmail = email.trim().toLowerCase();
-    const isAsgardEmail = normalizedEmail.endsWith(SUPER_ADMIN_DOMAIN);
+    const asgardEmail = isAsgardEmail(normalizedEmail);
 
-    if (isAsgardEmail) {
-      const asgardUser = await this.asgardUserRepo.findByEmail(normalizedEmail);
+    if (asgardEmail) {
+      const candidates = asgardEmailCandidates(normalizedEmail);
+      let asgardUser = null;
+      for (const candidate of candidates) {
+        asgardUser = await this.asgardUserRepo.findByEmail(candidate);
+        if (asgardUser) break;
+      }
       if (!asgardUser) {
         logger.info("Forgot/activation Asgard: e-mail não encontrado (não revelar)", {
           email: normalizedEmail,
@@ -41,8 +61,8 @@ export class ForgotPasswordService {
 
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-      await this.userRepo.savePasswordResetToken("master", normalizedEmail, token, expiresAt);
-      await sendTokenEmail(normalizedEmail, token, type);
+      await this.userRepo.savePasswordResetToken("master", asgardUser.email, token, expiresAt);
+      await sendTokenEmail(asgardUser.email, token, type);
       return { ok: true };
     }
 

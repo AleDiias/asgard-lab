@@ -4,9 +4,24 @@ import type { UserRepository } from "@/repositories/user.repository.js";
 import type { AsgardUserRepository } from "@/repositories/asgard-user.repository.js";
 import { logger } from "@/infra/logger.js";
 
-const SUPER_ADMIN_DOMAIN = "@asgardai.com.br";
+const SUPER_ADMIN_DOMAINS = ["@asgardai.com.br", "@asgardai"];
 /** Mesmo valor usado em `UserRepositoryDrizzle` para tokens de reset do fluxo Asgard (mapa em memória). */
 const MASTER_TENANT_ID = "master";
+
+function isAsgardEmail(email: string): boolean {
+  return SUPER_ADMIN_DOMAINS.some((domain) => email.endsWith(domain));
+}
+
+function asgardEmailCandidates(email: string): string[] {
+  const normalized = email.trim().toLowerCase();
+  if (normalized.endsWith("@asgardai.com.br")) {
+    return [normalized, normalized.replace(/@asgardai\.com\.br$/, "@asgardai")];
+  }
+  if (normalized.endsWith("@asgardai")) {
+    return [normalized, `${normalized}.com.br`];
+  }
+  return [normalized];
+}
 
 export interface ResetPasswordInput {
   token: string;
@@ -31,17 +46,22 @@ export class ResetPasswordService {
     );
     if (masterTokenData) {
       const email = masterTokenData.email.trim().toLowerCase();
-      if (!email.endsWith(SUPER_ADMIN_DOMAIN)) {
+      if (!isAsgardEmail(email)) {
         logger.warn("Token master com e-mail inesperado", { email });
         throw new Error("Token inválido ou expirado.");
       }
-      const asgardUser = await this.asgardUserRepo.findByEmail(email);
+      const candidates = asgardEmailCandidates(email);
+      let asgardUser = null;
+      for (const candidate of candidates) {
+        asgardUser = await this.asgardUserRepo.findByEmail(candidate);
+        if (asgardUser) break;
+      }
       if (!asgardUser) {
         logger.warn("Reset Asgard: usuário não encontrado após token master", { email });
         throw new Error("Token inválido ou expirado.");
       }
       const passwordHash = await argon2.hash(newPassword);
-      await this.asgardUserRepo.updatePasswordByEmail(email, passwordHash);
+      await this.asgardUserRepo.updatePasswordByEmail(asgardUser.email, passwordHash);
       await this.userRepo.invalidatePasswordResetToken(MASTER_TENANT_ID, token);
       logger.info("Senha redefinida com sucesso (Asgard)", { email });
       return { ok: true };

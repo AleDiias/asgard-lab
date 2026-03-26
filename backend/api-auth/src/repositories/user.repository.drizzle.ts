@@ -54,6 +54,12 @@ async function ensureTenantAuthSchema(databaseName: string): Promise<void> {
   await p;
 }
 
+function isUsersRelationMissing(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return message.includes('relation "users" does not exist');
+}
+
 export class UserRepositoryDrizzle implements UserRepository {
   private tenantDb(tenantId: string) {
     if (tenantId === MASTER_TENANT_ID) {
@@ -65,36 +71,50 @@ export class UserRepositoryDrizzle implements UserRepository {
     });
   }
 
-  async findByEmail(tenantId: string, email: string): Promise<UserEntity | null> {
-    const normalized = normalizeEmail(email);
-
+  private async withTenantDb<T>(
+    tenantId: string,
+    operation: (db: NonNullable<Awaited<ReturnType<UserRepositoryDrizzle["tenantDb"]>>>) => Promise<T>
+  ): Promise<T | null> {
     if (tenantId === MASTER_TENANT_ID) {
       return null;
     }
-
-    const db = await this.tenantDb(tenantId);
-    if (!db) {
-      return null;
+    const dbName = await resolveTenantDatabaseName(tenantId);
+    const db = getTenantDb(dbName);
+    await ensureTenantAuthSchema(dbName);
+    try {
+      return await operation(db);
+    } catch (error) {
+      if (!isUsersRelationMissing(error)) {
+        throw error;
+      }
+      await runTenantMigrations(dbName);
+      return await operation(db);
     }
+  }
 
-    const [row] = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        passwordHash: users.passwordHash,
-        role: users.role,
-        permissions: users.permissions,
-        isActive: users.isActive,
-      })
-      .from(users)
-      .where(
-        and(
-          sql`lower(${users.email}) = ${normalized}`,
-          eq(users.isActive, true)
+  async findByEmail(tenantId: string, email: string): Promise<UserEntity | null> {
+    const normalized = normalizeEmail(email);
+    const row = await this.withTenantDb(tenantId, async (db) => {
+      const [r] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          passwordHash: users.passwordHash,
+          role: users.role,
+          permissions: users.permissions,
+          isActive: users.isActive,
+        })
+        .from(users)
+        .where(
+          and(
+            sql`lower(${users.email}) = ${normalized}`,
+            eq(users.isActive, true)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
+      return r ?? null;
+    });
 
     if (!row) {
       return null;
@@ -255,26 +275,20 @@ export class UserRepositoryDrizzle implements UserRepository {
   }
 
   async listTenantUsers(tenantId: string): Promise<TenantUserListItem[]> {
-    if (tenantId === MASTER_TENANT_ID) {
-      return [];
-    }
-
-    const db = await this.tenantDb(tenantId);
-    if (!db) {
-      return [];
-    }
-
-    const rows = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        permissions: users.permissions,
-        isActive: users.isActive,
-      })
-      .from(users)
-      .orderBy(asc(users.name));
+    const rows = await this.withTenantDb(tenantId, async (db) =>
+      db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          permissions: users.permissions,
+          isActive: users.isActive,
+        })
+        .from(users)
+        .orderBy(asc(users.name))
+    );
+    if (!rows) return [];
 
     return rows.map((r) => ({
       id: r.id,
