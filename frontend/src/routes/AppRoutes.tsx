@@ -31,6 +31,7 @@ const ClientsRegisterNewPage = lazy(() => import("@/pages/app/ClientsRegisterNew
 const ClientsRegisterEditPage = lazy(() => import("@/pages/app/ClientsRegisterEditPage"));
 const ClientUsersPage = lazy(() => import("@/pages/app/ClientUsersPage"));
 const ClientUserNewPage = lazy(() => import("@/pages/app/ClientUserNewPage"));
+const ClientUserEditPage = lazy(() => import("@/pages/app/ClientUserEditPage"));
 const AsgardTeamPage = lazy(() => import("@/pages/app/AsgardTeamPage"));
 const AsgardMemberNewPage = lazy(() => import("@/pages/app/AsgardMemberNewPage"));
 const LeadImportPage = lazy(() => import("@/pages/app/LeadImportPage"));
@@ -59,6 +60,7 @@ export const AppRoutes = () => {
             <Route index element={<OverviewDashboard />} />
             <Route element={<TenantTeamRoute />}>
               <Route path="users/new" element={<ClientUserNewPage />} />
+              <Route path="users/:id/edit" element={<ClientUserEditPage />} />
               <Route path="users" element={<ClientUsersPage />} />
             </Route>
             <Route element={<LeadsImportRoute />}>

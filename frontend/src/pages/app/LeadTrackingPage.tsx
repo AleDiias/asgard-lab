@@ -128,9 +128,9 @@ export default function LeadTrackingPage() {
   const importedBatches = useMemo(() => {
     const all = batchesData?.items ?? [];
     if (appliedImportBatchId === "all") {
-      return all.filter((b) => b.importedCount > 0);
+      return all.filter((b) => b.importedCount - b.removedCount > 0);
     }
-    return all.filter((b) => b.id === appliedImportBatchId && b.importedCount > 0);
+    return all.filter((b) => b.id === appliedImportBatchId && b.importedCount - b.removedCount > 0);
   }, [batchesData, appliedImportBatchId]);
 
   useEffect(() => {
@@ -213,7 +213,7 @@ export default function LeadTrackingPage() {
                 page={page}
                 pageSize={PAGE_SIZE}
                 onPageChange={setPage}
-                onPageSizeChange={() => {}}
+                onPageSizeChange={() => { }}
                 className="mt-2 rounded-lg border border-border"
               />
             ) : null}
@@ -240,7 +240,7 @@ export default function LeadTrackingPage() {
             onRemovidosOpenChange={setRemovidosOpen}
             onRemoveImportedBatch={(b) => {
               const ok = window.confirm(
-                `Remover o lote ${b.fileName}? Isso excluirá os contactos importados por esse arquivo.`
+                `Remover o lote ${b.fileName}? Isso excluirá os contatos importados por esse arquivo.`
               );
               if (!ok) return;
               deleteBatchMutation.mutate(b.id);

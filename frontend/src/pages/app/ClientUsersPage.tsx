@@ -1,33 +1,23 @@
-import { useCallback, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { isAxiosError } from "axios";
+import { useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Filter, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { ActionBar, Button } from "@/components/ui";
 import { TablePaginationBar } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DEFAULT_CONFIG_PAGE_SIZE,
   usePaginationSlice,
 } from "@/hooks/use-pagination-slice";
 import {
   CLIENT_USERS_ROUTES,
-  ClientUserFormUI,
   ClientUserListUI,
   clientUsersScreen,
 } from "@/components/screens/client-users";
 import type { ClientUserListRow } from "@/components/screens/client-users/types";
-import type { ClientUserFormFieldErrors, ClientUserFormValues } from "@/components/screens/client-users";
-import { listTenantUsersFn, patchTenantUserStatusFn, updateTenantUserPermissionsFn } from "@/api/admin/admin.api";
+import { listTenantUsersFn, patchTenantUserStatusFn } from "@/api/admin/admin.api";
 import type { TenantUserRecord } from "@/types/admin.types";
 import { getErrorMessage } from "@/utils/feedback";
-import { isAsgardInternalUser } from "@/utils/asgard-access";
-import { useAuthStore } from "@/stores/auth.store";
-import {
-  clientUserEditFormSchema,
-  mapZodErrorToClientUserFormFieldErrors,
-} from "@/pages/app/schemas/client-user-form.schema";
 import {
   PERMISSION_CAMPAIGNS_READ,
   PERMISSION_CAMPAIGNS_WRITE,
@@ -67,12 +57,8 @@ function mapToRow(u: TenantUserRecord): ClientUserListRow {
 }
 
 export default function ClientUsersPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
-  const [editingRow, setEditingRow] = useState<ClientUserListRow | null>(null);
-  const [editFieldErrors, setEditFieldErrors] = useState<ClientUserFormFieldErrors | undefined>();
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const authUser = useAuthStore((s) => s.user);
-  const canManageRole = isAsgardInternalUser(authUser);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["tenant", "users"],
@@ -111,46 +97,6 @@ export default function ClientUsersPage() {
     [deactivateMutation]
   );
 
-  const handleEditSubmit = useCallback(
-    async (form: ClientUserFormValues) => {
-      if (!editingRow) return;
-      const parsed = clientUserEditFormSchema.safeParse({
-        name: form.name,
-        email: form.email,
-        role: form.role,
-        permissionIds: form.permissionIds,
-        status: form.status,
-      });
-      if (!parsed.success) {
-        setEditFieldErrors(mapZodErrorToClientUserFormFieldErrors(parsed.error));
-        return;
-      }
-      setEditFieldErrors(undefined);
-      setIsSavingEdit(true);
-      try {
-        await updateTenantUserPermissionsFn(editingRow.id, {
-          permissionIds: parsed.data.permissionIds,
-          role: canManageRole ? parsed.data.role : undefined,
-        });
-        await patchTenantUserStatusFn(editingRow.id, {
-          isActive: parsed.data.status === "active",
-        });
-        toast.success("Usuário atualizado com sucesso.");
-        setEditingRow(null);
-        await qc.invalidateQueries({ queryKey: ["tenant", "users"] });
-      } catch (e: unknown) {
-        if (isAxiosError(e) && e.response?.status === 409) {
-          toast.error("Conflito ao atualizar usuário.");
-          return;
-        }
-        toast.error(getErrorMessage(e, "Não foi possível atualizar o usuário."));
-      } finally {
-        setIsSavingEdit(false);
-      }
-    },
-    [canManageRole, editingRow, qc]
-  );
-
   return (
     <section className="space-y-3">
       <ActionBar
@@ -186,7 +132,7 @@ export default function ClientUsersPage() {
             loading={isLoading}
             rows={paginatedItems}
             hideTitle
-            onEdit={(row) => setEditingRow(row)}
+            onEdit={(row) => navigate(CLIENT_USERS_ROUTES.editUser(row.id))}
             onDelete={handleDelete}
           />
           <TablePaginationBar
@@ -200,42 +146,6 @@ export default function ClientUsersPage() {
         </>
       )}
 
-      <Dialog
-        open={editingRow !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingRow(null);
-            setEditFieldErrors(undefined);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Editar usuário</DialogTitle>
-          </DialogHeader>
-          {editingRow ? (
-            <ClientUserFormUI
-              mode="edit"
-              formId="client-user-edit-form"
-              hideSubmitButton={false}
-              permissionOptions={DEFAULT_PERMISSION_OPTIONS}
-              values={{
-                name: editingRow.name,
-                email: editingRow.email,
-                role: (editingRow.role as "admin" | "user") ?? "user",
-                status: editingRow.status,
-                permissionIds: (data ?? [])
-                  .find((u) => u.id === editingRow.id)
-                  ?.permissions.map((p) => p) ?? [],
-              }}
-              fieldErrors={editFieldErrors}
-              isLoading={isSavingEdit}
-              showRoleField={canManageRole}
-              onSubmit={handleEditSubmit}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -95,35 +95,37 @@ export function LeadsByFilePanelUI({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome do arquivo</TableHead>
+                        <TableHead>Nome</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead className="text-right">Contactos importados</TableHead>
+                        <TableHead className="text-right">Contatos</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {importedBatches.map((b) => (
-                          <TableRow key={b.id}>
-                            <TableCell className="font-medium">{b.fileName}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {formatDt(b.createdAt)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {b.importedCount.toLocaleString("pt-PT")}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {onRemoveImportedBatch ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => onRemoveImportedBatch(b)}
-                                >
-                                  Remover
-                                </Button>
-                              ) : null}
-                            </TableCell>
-                          </TableRow>
+                        <TableRow key={b.id}>
+                          <TableCell className="font-medium">{b.fileName}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDt(b.createdAt)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {b.importedCount.toLocaleString("pt-PT")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {onRemoveImportedBatch ? (
+                              <Button
+                                type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                  aria-label="Remover lote importado"
+                                onClick={() => onRemoveImportedBatch(b)}
+                              >
+                                  <Trash2 className="h-4 w-4" aria-hidden />
+                              </Button>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -160,7 +162,7 @@ export function LeadsByFilePanelUI({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome do arquivo</TableHead>
+                        <TableHead>Nome</TableHead>
                         <TableHead className="text-right">Status</TableHead>
                         <TableHead className="text-right">Data</TableHead>
                       </TableRow>

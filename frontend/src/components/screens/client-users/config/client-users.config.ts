@@ -2,6 +2,7 @@
 export const CLIENT_USERS_ROUTES = {
   list: "/app/users",
   newUser: "/app/users/new",
+  editUser: (id: string) => `/app/users/${id}/edit`,
 } as const;
 
 /**
