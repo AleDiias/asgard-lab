@@ -18,6 +18,10 @@ const app = express();
 const PORT = env.PORT;
 
 app.disable("x-powered-by");
+if (env.TRUST_PROXY) {
+  // Necessário atrás de proxy (Caddy/Nginx) para rate-limit ler IP real com X-Forwarded-For.
+  app.set("trust proxy", 1);
+}
 app.use(helmet());
 app.use(cors(createCorsOptions(env.CORS_ALLOWED_ORIGINS, env.NODE_ENV === "production")));
 app.use(globalRateLimiter);

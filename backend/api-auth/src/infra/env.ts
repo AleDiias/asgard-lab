@@ -1,6 +1,7 @@
 interface SecurityEnv {
   NODE_ENV: string;
   PORT: number;
+  TRUST_PROXY: boolean;
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   DATABASE_URL: string;
@@ -27,6 +28,10 @@ export function validateAndGetEnv(): SecurityEnv {
   const env: SecurityEnv = {
     NODE_ENV: process.env.NODE_ENV ?? "development",
     PORT: Number(process.env.PORT ?? "3001"),
+    TRUST_PROXY:
+      process.env.TRUST_PROXY !== undefined
+        ? process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY.toLowerCase() === "true"
+        : (process.env.NODE_ENV ?? "development") === "production",
     JWT_SECRET: required("JWT_SECRET", process.env.JWT_SECRET),
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "7d",
     DATABASE_URL: required("DATABASE_URL", process.env.DATABASE_URL),

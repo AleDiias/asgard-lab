@@ -1,6 +1,7 @@
 interface CoreEnv {
   NODE_ENV: string;
   PORT: number;
+  TRUST_PROXY: boolean;
   JWT_SECRET: string;
   DATABASE_URL: string;
   CORS_ALLOWED_ORIGINS: string;
@@ -28,6 +29,10 @@ export function validateAndGetEnv(): CoreEnv {
   const env: CoreEnv = {
     NODE_ENV: process.env.NODE_ENV ?? "development",
     PORT: portNum,
+    TRUST_PROXY:
+      process.env.TRUST_PROXY !== undefined
+        ? process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY.toLowerCase() === "true"
+        : (process.env.NODE_ENV ?? "development") === "production",
     JWT_SECRET: required("JWT_SECRET", process.env.JWT_SECRET),
     DATABASE_URL: required("DATABASE_URL", process.env.DATABASE_URL),
     CORS_ALLOWED_ORIGINS:
