@@ -200,6 +200,26 @@ export class LeadRepositoryDrizzle implements LeadRepository {
     return { items, total };
   }
 
+  async removeImportBatch(
+    db: TenantDb,
+    importBatchId: string
+  ): Promise<{ removedLeads: number; removedBatch: boolean }> {
+    return db.transaction(async (tx) => {
+      const removedLeadsRows = await tx
+        .delete(leads)
+        .where(eq(leads.importBatchId, importBatchId))
+        .returning({ id: leads.id });
+      const removedBatchRows = await tx
+        .delete(leadImportBatches)
+        .where(eq(leadImportBatches.id, importBatchId))
+        .returning({ id: leadImportBatches.id });
+      return {
+        removedLeads: removedLeadsRows.length,
+        removedBatch: removedBatchRows.length > 0,
+      };
+    });
+  }
+
   async listIdsByImportBatch(db: TenantDb, importBatchId: string): Promise<string[]> {
     const rows = await db
       .select({ id: leads.id })

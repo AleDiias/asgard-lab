@@ -5,6 +5,7 @@ import {
   getTenantDb,
   toTenantDatabaseName,
 } from "@/infra/database/tenant/connection-manager.js";
+import { runTenantMigrations } from "@/infra/database/tenant/migrator.js";
 import { users } from "@/infra/database/tenant/schema.js";
 import { asc } from "drizzle-orm";
 import type {
@@ -21,6 +22,7 @@ const masterResetByToken = new Map<
   string,
   { userId: string; email: string; expiresAt: Date }
 >();
+const authMigrationsByDatabase = new Map<string, Promise<void>>();
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -40,14 +42,27 @@ async function resolveTenantDatabaseName(tenantId: string): Promise<string> {
   return toTenantDatabaseName(row.dbName);
 }
 
+async function ensureTenantAuthSchema(databaseName: string): Promise<void> {
+  let p = authMigrationsByDatabase.get(databaseName);
+  if (!p) {
+    p = runTenantMigrations(databaseName).catch((error) => {
+      authMigrationsByDatabase.delete(databaseName);
+      throw error;
+    });
+    authMigrationsByDatabase.set(databaseName, p);
+  }
+  await p;
+}
+
 export class UserRepositoryDrizzle implements UserRepository {
   private tenantDb(tenantId: string) {
     if (tenantId === MASTER_TENANT_ID) {
       return null;
     }
-    return resolveTenantDatabaseName(tenantId).then((dbName) =>
-      getTenantDb(dbName)
-    );
+    return resolveTenantDatabaseName(tenantId).then(async (dbName) => {
+      await ensureTenantAuthSchema(dbName);
+      return getTenantDb(dbName);
+    });
   }
 
   async findByEmail(tenantId: string, email: string): Promise<UserEntity | null> {

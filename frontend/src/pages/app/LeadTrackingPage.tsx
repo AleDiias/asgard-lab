@@ -5,7 +5,13 @@ import { Upload } from "lucide-react";
 import { ActionBar, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { toast } from "sonner";
 import { TablePaginationBar } from "@/components/ui/table";
-import { deleteLeadFn, getLeadMetricsFn, listImportBatchesFn, listLeadsFn } from "@/api/core/leads.api";
+import {
+  deleteImportBatchFn,
+  deleteLeadFn,
+  getLeadMetricsFn,
+  listImportBatchesFn,
+  listLeadsFn,
+} from "@/api/core/leads.api";
 import {
   buildLeadTrackingFiltersApplySchema,
   mapLeadTrackingFiltersFieldErrors,
@@ -96,6 +102,18 @@ export default function LeadTrackingPage() {
     },
     onError: (e: unknown) => {
       toast.error(getErrorMessage(e, "Não foi possível excluir o contato."));
+    },
+  });
+  const deleteBatchMutation = useMutation({
+    mutationFn: (id: string) => deleteImportBatchFn(id),
+    onSuccess: async (data) => {
+      toast.success(`Lote removido com sucesso (${data.removedLeads} contacto(s)).`);
+      await qc.invalidateQueries({ queryKey: ["lead-metrics"] });
+      await qc.invalidateQueries({ queryKey: ["leads-list"] });
+      await qc.invalidateQueries({ queryKey: ["import-batches-options"] });
+    },
+    onError: (e: unknown) => {
+      toast.error(getErrorMessage(e, "Não foi possível remover o lote importado."));
     },
   });
 
@@ -220,6 +238,13 @@ export default function LeadTrackingPage() {
             onImportadosOpenChange={setImportadosOpen}
             removidosOpen={removidosOpen}
             onRemovidosOpenChange={setRemovidosOpen}
+            onRemoveImportedBatch={(b) => {
+              const ok = window.confirm(
+                `Remover o lote ${b.fileName}? Isso excluirá os contactos importados por esse arquivo.`
+              );
+              if (!ok) return;
+              deleteBatchMutation.mutate(b.id);
+            }}
           />
         </div>
       </div>

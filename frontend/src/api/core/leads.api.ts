@@ -111,3 +111,12 @@ export async function deleteLeadFn(id: string): Promise<void> {
   >(`/api/v1/leads/${id}`);
   assertSuccess(data);
 }
+
+export async function deleteImportBatchFn(id: string): Promise<{ removedLeads: number }> {
+  const { data } = await coreApiClient.delete<
+    | { success: true; data: { removedLeads: number } }
+    | { success: false; error: { message: string } }
+  >(`/api/v1/leads/import-batches/${id}`);
+  assertSuccess(data);
+  return data.data;
+}

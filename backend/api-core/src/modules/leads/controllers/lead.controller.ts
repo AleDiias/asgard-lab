@@ -60,6 +60,17 @@ export class LeadController {
     }
   };
 
+  removeImportBatch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = leadIdParamSchema.parse(req.params);
+      const db = requireTenantDb(req);
+      const data = await this.leadService.removeImportBatch(db, id);
+      res.status(200).json({ success: true, data });
+    } catch (e) {
+      next(e);
+    }
+  };
+
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const body = createLeadBodySchema.parse(req.body);

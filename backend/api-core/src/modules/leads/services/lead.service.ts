@@ -60,6 +60,14 @@ export class LeadService {
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
 
+  async removeImportBatch(db: TenantDb, importBatchId: string): Promise<{ removedLeads: number }> {
+    const result = await this.leadRepo.removeImportBatch(db, importBatchId);
+    if (!result.removedBatch) {
+      throw new NotFoundError("Lote de importação não encontrado.");
+    }
+    return { removedLeads: result.removedLeads };
+  }
+
   async getById(db: TenantDb, id: string): Promise<LeadRow> {
     const lead = await this.leadRepo.findById(db, id);
     if (!lead) {

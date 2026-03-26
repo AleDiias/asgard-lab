@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -37,6 +38,7 @@ export interface LeadsByFilePanelUIProps {
   onImportadosOpenChange: (open: boolean) => void;
   removidosOpen: boolean;
   onRemovidosOpenChange: (open: boolean) => void;
+  onRemoveImportedBatch?: (batch: LeadImportBatchRecord) => void;
   className?: string;
 }
 
@@ -51,6 +53,7 @@ export function LeadsByFilePanelUI({
   onImportadosOpenChange,
   removidosOpen,
   onRemovidosOpenChange,
+  onRemoveImportedBatch,
   className,
 }: LeadsByFilePanelUIProps) {
   const totalRemovidos = removidosBatches.reduce((acc, b) => acc + b.removedCount, 0);
@@ -95,6 +98,7 @@ export function LeadsByFilePanelUI({
                         <TableHead>Nome do arquivo</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Contactos importados</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -106,6 +110,18 @@ export function LeadsByFilePanelUI({
                             </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {b.importedCount.toLocaleString("pt-PT")}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {onRemoveImportedBatch ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onRemoveImportedBatch(b)}
+                                >
+                                  Remover
+                                </Button>
+                              ) : null}
                             </TableCell>
                           </TableRow>
                       ))}

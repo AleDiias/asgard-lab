@@ -207,6 +207,7 @@ function PainelPorFicheiroDemo() {
         onImportadosOpenChange={setIo}
         removidosOpen={ro}
         onRemovidosOpenChange={setRo}
+        onRemoveImportedBatch={() => {}}
       />
     </div>
   );
@@ -291,6 +292,7 @@ function LayoutCompletoDemo() {
             onImportadosOpenChange={setIo}
             removidosOpen={ro}
             onRemovidosOpenChange={setRo}
+            onRemoveImportedBatch={() => {}}
           />
         </div>
       </div>

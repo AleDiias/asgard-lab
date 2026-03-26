@@ -57,6 +57,10 @@ export interface LeadRepository {
   bulkInsertSkipDuplicatePhones(db: TenantDb, rows: LeadInsert[]): Promise<number>;
   getMetrics(db: TenantDb): Promise<LeadMetricsSnapshot>;
   listImportBatches(db: TenantDb, params: ImportBatchListParams): Promise<ImportBatchListResult>;
+  removeImportBatch(
+    db: TenantDb,
+    importBatchId: string
+  ): Promise<{ removedLeads: number; removedBatch: boolean }>;
   /** IDs de leads associados a um lote de importação. */
   listIdsByImportBatch(db: TenantDb, importBatchId: string): Promise<string[]>;
   findManyByIds(db: TenantDb, ids: string[]): Promise<LeadRow[]>;

@@ -36,6 +36,11 @@ leadsRouter.get(
   requirePermission([PERMISSION_LEADS_READ]),
   leadController.listImportBatches
 );
+leadsRouter.delete(
+  "/import-batches/:id",
+  requirePermission([PERMISSION_LEADS_WRITE]),
+  leadController.removeImportBatch
+);
 leadsRouter.post(
   "/",
   requirePermission([PERMISSION_LEADS_WRITE]),
