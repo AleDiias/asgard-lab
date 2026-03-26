@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import Papa from "papaparse";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ function buildMappedRows(
 }
 
 export default function LeadImportPage() {
+  const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [fileName, setFileName] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -91,6 +93,7 @@ export default function LeadImportPage() {
         description: parts.join(" · "),
       });
       resetWizard();
+      navigate("/app/leads");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Falha ao importar.");
