@@ -3,6 +3,7 @@ export type CampaignStatus = "draft" | "syncing" | "active" | "paused" | "comple
 export interface CampaignRecord {
   id: string;
   integrationId: string | null;
+  queueId: string | null;
   name: string;
   externalCampaignId: string | null;
   status: CampaignStatus;

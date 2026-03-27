@@ -26,7 +26,8 @@ export async function updateIntegrationFn(
   body: {
     name?: string;
     isActive?: boolean;
-    credentials?: { apiKey: string; baseUrl: string };
+    baseUrl?: string;
+    credentials?: { apiKey: string };
   }
 ): Promise<IntegrationRecord> {
   const { data } = await coreApiClient.patch<
@@ -39,7 +40,8 @@ export async function updateIntegrationFn(
 export async function createIntegrationFn(body: {
   provider: IntegrationRecord["provider"];
   name: string;
-  credentials: { apiKey: string; baseUrl: string };
+  baseUrl: string;
+  credentials: { apiKey: string };
   isActive?: boolean;
 }): Promise<IntegrationRecord> {
   const { data } = await coreApiClient.post<

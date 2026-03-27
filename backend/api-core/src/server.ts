@@ -5,6 +5,7 @@ import { appRoutes } from "@/routes.js";
 import { errorHandler } from "@/middlewares/error-handler.middleware.js";
 import { logger } from "@/infra/logger.js";
 import { validateAndGetEnv } from "@/infra/env.js";
+import { startQueueWorkers } from "@/infra/queue/workers.js";
 import {
   cors,
   createCorsOptions,
@@ -27,6 +28,8 @@ app.use(express.json({ limit: env.JSON_LIMIT }));
 app.use("/", appRoutes);
 
 app.use(errorHandler);
+
+startQueueWorkers();
 
 app.listen(PORT, () => {
   logger.info("API Core rodando", { port: PORT });

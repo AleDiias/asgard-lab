@@ -6,6 +6,7 @@ interface CoreEnv {
   DATABASE_URL: string;
   CORS_ALLOWED_ORIGINS: string;
   JSON_LIMIT: string;
+  REDIS_URL: string;
 }
 
 let cachedEnv: CoreEnv | null = null;
@@ -39,6 +40,7 @@ export function validateAndGetEnv(): CoreEnv {
       process.env.CORS_ALLOWED_ORIGINS ??
       "http://localhost:3005,http://127.0.0.1:3005,http://demo.localhost:3005,https://*.asgardai.com.br",
     JSON_LIMIT: process.env.JSON_LIMIT ?? "1mb",
+    REDIS_URL: process.env.REDIS_URL?.trim() || "redis://127.0.0.1:6379",
   };
 
   cachedEnv = env;

@@ -31,6 +31,7 @@ export default function CampaignEditPage() {
 
   const [name, setName] = useState("");
   const [integrationId, setIntegrationId] = useState(CAMPAIGN_INTEGRATION_NONE);
+  const [queueId, setQueueId] = useState(CAMPAIGN_INTEGRATION_NONE);
   const [operationalActive, setOperationalActive] = useState(true);
   const [campaignStatus, setCampaignStatus] = useState<CampaignStatus>("draft");
 
@@ -49,6 +50,7 @@ export default function CampaignEditPage() {
     if (!data) return;
     setName(data.name);
     setIntegrationId(data.integrationId ?? CAMPAIGN_INTEGRATION_NONE);
+    setQueueId(data.queueId ?? CAMPAIGN_INTEGRATION_NONE);
     setCampaignStatus(data.status);
     setOperationalActive(data.status === "active");
   }, [data]);
@@ -73,12 +75,13 @@ export default function CampaignEditPage() {
     const body: Parameters<typeof updateCampaignFn>[1] = {
       name: n,
       integrationId: integrationId === CAMPAIGN_INTEGRATION_NONE ? null : integrationId,
+      queueId: queueId === CAMPAIGN_INTEGRATION_NONE ? null : queueId,
     };
     if (!statusOperationalLocked(campaignStatus)) {
       body.status = operationalActive ? "active" : "paused";
     }
     updateMutation.mutate(body);
-  }, [campaignStatus, integrationId, name, operationalActive, updateMutation]);
+  }, [campaignStatus, integrationId, name, operationalActive, queueId, updateMutation]);
 
   if (!canWrite) {
     return <Navigate to={CAMPAIGN_ROUTES.list} replace />;
@@ -141,7 +144,12 @@ export default function CampaignEditPage() {
             name={name}
             onNameChange={setName}
             integrationId={integrationId}
-            onIntegrationChange={setIntegrationId}
+            onIntegrationChange={(v) => {
+              setIntegrationId(v);
+              setQueueId(CAMPAIGN_INTEGRATION_NONE);
+            }}
+            queueId={queueId}
+            onQueueIdChange={setQueueId}
             integrations={integrations}
             leadsCount={data.leadsCount}
             campaignStatus={campaignStatus}

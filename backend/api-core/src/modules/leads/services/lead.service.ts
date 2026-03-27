@@ -1,6 +1,8 @@
 import { NotFoundError } from "@/errors/app-error.js";
+import { eq, inArray } from "drizzle-orm";
 import type { TenantDb } from "@/infra/database/tenant/connection-manager.js";
-import type { LeadImportBatchRow, LeadRow } from "@/infra/database/tenant/schema.js";
+import { campaignLeads, campaigns, integrations, type LeadImportBatchRow, type LeadRow } from "@/infra/database/tenant/schema.js";
+import { enqueueDialerSyncJob } from "@/infra/queue/enqueue.js";
 import type { CreateLeadBody, ListLeadsQuery, UpdateLeadBody } from "../schemas/lead.schema.js";
 import type { LeadRepository, LeadUpdateFields } from "../repositories/lead.repository.js";
 
@@ -61,9 +63,44 @@ export class LeadService {
   }
 
   async removeImportBatch(db: TenantDb, importBatchId: string): Promise<{ removedLeads: number }> {
+    const leadIds = await this.leadRepo.listIdsByImportBatch(db, importBatchId);
+    const dialerTargets =
+      leadIds.length === 0
+        ? []
+        : await db
+            .select({
+              campaignId: campaignLeads.campaignId,
+              integrationId: campaigns.integrationId,
+              queueId: campaigns.queueId,
+              isActive: integrations.isActive,
+            })
+            .from(campaignLeads)
+            .innerJoin(campaigns, eq(campaignLeads.campaignId, campaigns.id))
+            .innerJoin(integrations, eq(campaigns.integrationId, integrations.id))
+            .where(inArray(campaignLeads.leadId, leadIds));
+
     const result = await this.leadRepo.removeImportBatch(db, importBatchId);
     if (!result.removedBatch) {
       throw new NotFoundError("Lote de importação não encontrado.");
+    }
+    const tenantDatabaseName = (db as unknown as { $client?: { database?: string } }).$client?.database;
+    if (tenantDatabaseName) {
+      const uniqueTargets = new Map<string, { integrationId: string; queueId: string }>();
+      for (const row of dialerTargets) {
+        if (!row.integrationId || !row.queueId || !row.isActive) continue;
+        uniqueTargets.set(`${row.integrationId}:${row.queueId}`, {
+          integrationId: row.integrationId,
+          queueId: row.queueId,
+        });
+      }
+      for (const t of uniqueTargets.values()) {
+        await enqueueDialerSyncJob({
+          action: "remove_bulk",
+          tenantDatabaseName,
+          integrationId: t.integrationId,
+          queueId: t.queueId,
+        });
+      }
     }
     return { removedLeads: result.removedLeads };
   }
@@ -77,9 +114,34 @@ export class LeadService {
   }
 
   async remove(db: TenantDb, id: string): Promise<void> {
+    const dialerRows = await db
+      .select({
+        externalLeadId: campaignLeads.externalLeadId,
+        campaignId: campaignLeads.campaignId,
+        integrationId: campaigns.integrationId,
+        isActive: integrations.isActive,
+      })
+      .from(campaignLeads)
+      .innerJoin(campaigns, eq(campaignLeads.campaignId, campaigns.id))
+      .innerJoin(integrations, eq(campaigns.integrationId, integrations.id))
+      .where(eq(campaignLeads.leadId, id));
+
     const ok = await this.leadRepo.remove(db, id);
     if (!ok) {
       throw new NotFoundError("Lead não encontrado.");
+    }
+    const tenantDatabaseName = (db as unknown as { $client?: { database?: string } }).$client?.database;
+    if (tenantDatabaseName) {
+      for (const row of dialerRows) {
+        if (!row.externalLeadId || !row.integrationId || !row.isActive) continue;
+        await enqueueDialerSyncJob({
+          action: "remove_single",
+          tenantDatabaseName,
+          integrationId: row.integrationId,
+          campaignId: row.campaignId,
+          contactId: row.externalLeadId,
+        });
+      }
     }
   }
 

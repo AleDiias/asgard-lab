@@ -26,7 +26,8 @@ export default function CampaignNewPage() {
 
   const [name, setName] = useState("");
   const [integrationId, setIntegrationId] = useState(CAMPAIGN_INTEGRATION_NONE);
-  const [importBatchId, setImportBatchId] = useState(CAMPAIGN_INTEGRATION_NONE);
+  const [queueId, setQueueId] = useState(CAMPAIGN_INTEGRATION_NONE);
+  const [importBatchIds, setImportBatchIds] = useState<string[]>([]);
 
   const { data: integrations = [] } = useQuery({
     queryKey: ["integrations-active"],
@@ -40,14 +41,18 @@ export default function CampaignNewPage() {
 
   const activeIntegrations = integrations.filter((i) => i.isActive);
 
+  const availableImportBatches = (importBatchesData?.items ?? []).filter(
+    (b) => b.importedCount - b.removedCount > 0
+  );
+
   const createMutation = useMutation({
     mutationFn: createCampaignFn,
     onSuccess: async (created) => {
-      if (importBatchId !== CAMPAIGN_INTEGRATION_NONE) {
-        await syncCampaignLeadsFn(created.id, { importBatchId });
+      if (importBatchIds.length > 0) {
+        await syncCampaignLeadsFn(created.id, { importBatchIds });
       }
       toast.success(
-        importBatchId !== CAMPAIGN_INTEGRATION_NONE
+        importBatchIds.length > 0
           ? "Campanha criada e leads sincronizados."
           : "Campanha criada."
       );
@@ -66,8 +71,9 @@ export default function CampaignNewPage() {
     createMutation.mutate({
       name: n,
       integrationId: integrationId === CAMPAIGN_INTEGRATION_NONE ? null : integrationId,
+      queueId: queueId === CAMPAIGN_INTEGRATION_NONE ? null : queueId,
     });
-  }, [createMutation, integrationId, name]);
+  }, [createMutation, integrationId, name, queueId]);
 
   if (!canWrite) {
     return <Navigate to={CAMPAIGN_ROUTES.list} replace />;
@@ -109,11 +115,16 @@ export default function CampaignNewPage() {
           name={name}
           onNameChange={setName}
           integrationId={integrationId}
-          onIntegrationChange={setIntegrationId}
+          onIntegrationChange={(v) => {
+            setIntegrationId(v);
+            setQueueId(CAMPAIGN_INTEGRATION_NONE);
+          }}
+          queueId={queueId}
+          onQueueIdChange={setQueueId}
           integrations={activeIntegrations}
-          importBatches={importBatchesData?.items ?? []}
-          selectedImportBatchId={importBatchId}
-          onSelectedImportBatchIdChange={setImportBatchId}
+          importBatches={availableImportBatches}
+          selectedImportBatchIds={importBatchIds}
+          onSelectedImportBatchIdsChange={setImportBatchIds}
           onSubmit={handleSubmit}
           formId={CAMPAIGN_NEW_FORM_ID}
           submitLabel="Criar campanha"

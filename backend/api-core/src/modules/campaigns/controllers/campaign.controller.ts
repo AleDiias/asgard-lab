@@ -75,8 +75,12 @@ export class CampaignController {
       const { id } = campaignIdParamSchema.parse(req.params);
       const body = campaignSyncLeadsBodySchema.parse(req.body);
       const db = requireTenantDb(req);
-      const data = await this.campaignService.syncLeads(db, id, body);
-      res.json({ success: true, data });
+      const tenantDatabaseName = req.tenantContext?.databaseName;
+      if (!tenantDatabaseName) {
+        throw new BadRequestError("Contexto de tenant ausente.");
+      }
+      const data = await this.campaignService.syncLeads(db, id, body, tenantDatabaseName);
+      res.status(202).json({ success: true, data });
     } catch (e) {
       next(e);
     }

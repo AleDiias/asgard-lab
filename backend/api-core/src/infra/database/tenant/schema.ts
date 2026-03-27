@@ -81,7 +81,9 @@ export const integrations = pgTable("integrations", {
   id: uuid("id").defaultRandom().primaryKey(),
   provider: dialerProviderEnum("provider").notNull(),
   name: text("name").notNull(),
+  baseUrl: text("base_url").notNull(),
   credentials: jsonb("credentials").notNull().default({}),
+  queues: jsonb("queues").$type<Array<{ id: string; name: string; description?: string | null }>>().notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -91,6 +93,7 @@ export const campaigns = pgTable("campaigns", {
   id: uuid("id").defaultRandom().primaryKey(),
   /** Opcional até o tenant associar uma integração ativa. */
   integrationId: uuid("integration_id").references(() => integrations.id),
+  queueId: text("queue_id"),
   name: text("name").notNull(),
   externalCampaignId: text("external_campaign_id"),
   status: campaignStatusEnum("status").notNull().default("draft"),

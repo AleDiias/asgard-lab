@@ -47,7 +47,8 @@ export default function IntegrationNewPage() {
     createMutation.mutate({
       provider,
       name: n,
-      credentials: { apiKey: apiKey.trim(), baseUrl: baseUrl.trim() },
+      baseUrl: baseUrl.trim(),
+      credentials: { apiKey: apiKey.trim() },
       isActive: true,
     });
   }, [apiKey, baseUrl, createMutation, name, provider]);

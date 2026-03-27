@@ -1,7 +1,17 @@
+import { useState } from "react";
 import {
   Button,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
   Input,
   Label,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -9,8 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui";
 import { StatusWithDot } from "@/components/ui/status-with-dot";
+import { popoverFieldTriggerClassName } from "@/lib/ui-popover-field-trigger";
 import { cn } from "@/lib/utils";
 import { requiredLabel } from "@/validations";
+import { Check, ChevronsUpDown } from "lucide-react";
 import type { IntegrationRecord } from "@/types/core-integrations.types";
 import type { CampaignStatus } from "@/types/core-campaigns.types";
 import type { LeadImportBatchRecord } from "@/types/core-leads.types";
@@ -33,10 +45,12 @@ export interface CampaignFormUIProps {
   onNameChange: (v: string) => void;
   integrationId: string;
   onIntegrationChange: (v: string) => void;
+  queueId?: string;
+  onQueueIdChange?: (v: string) => void;
   integrations: IntegrationRecord[];
   importBatches?: LeadImportBatchRecord[];
-  selectedImportBatchId?: string;
-  onSelectedImportBatchIdChange?: (v: string) => void;
+  selectedImportBatchIds?: string[];
+  onSelectedImportBatchIdsChange?: (v: string[]) => void;
   /** Número de leads associados (só leitura, modo edição). */
   leadsCount?: number;
   /** Estado da campanha (API). Em edição, se `syncing` ou `completed`, o ativo/inativo fica bloqueado. */
@@ -61,10 +75,12 @@ export function CampaignFormUI({
   onNameChange,
   integrationId,
   onIntegrationChange,
+  queueId = CAMPAIGN_INTEGRATION_NONE,
+  onQueueIdChange,
   integrations,
   importBatches = [],
-  selectedImportBatchId = CAMPAIGN_INTEGRATION_NONE,
-  onSelectedImportBatchIdChange,
+  selectedImportBatchIds = [],
+  onSelectedImportBatchIdsChange,
   leadsCount,
   campaignStatus,
   operationalActive = true,
@@ -74,6 +90,7 @@ export function CampaignFormUI({
   disabled,
   loading,
 }: CampaignFormUIProps) {
+  const [batchesPopoverOpen, setBatchesPopoverOpen] = useState(false);
   const isEdit = variant === "edit";
   const defaultTitle = isEdit ? "Editar campanha" : "Nova campanha";
   const defaultDescription = isEdit
@@ -84,6 +101,8 @@ export function CampaignFormUI({
     integrationId === CAMPAIGN_INTEGRATION_NONE || !integrationId
       ? CAMPAIGN_INTEGRATION_NONE
       : integrationId;
+  const selectedIntegration = integrations.find((i) => i.id === selectValue);
+  const availableQueues = selectedIntegration?.queues ?? [];
 
   const statusLocked =
     isEdit && campaignStatus != null && (campaignStatus === "syncing" || campaignStatus === "completed");
@@ -93,6 +112,24 @@ export function CampaignFormUI({
 
   const row1Cols = isEdit ? "md:grid-cols-4" : "md:grid-cols-3";
   const row1CreateCols = isEdit ? row1Cols : "md:grid-cols-4";
+
+  const selectedBatchesSummary =
+    selectedImportBatchIds.length === 0
+      ? "Selecione um ou mais lotes"
+      : importBatches
+          .filter((b) => selectedImportBatchIds.includes(b.id))
+          .map((b) => `${b.fileName} (${b.importedCount - b.removedCount})`)
+          .join(", ");
+
+  const toggleBatch = (batchId: string) => {
+    const set = new Set(selectedImportBatchIds);
+    if (set.has(batchId)) {
+      set.delete(batchId);
+    } else {
+      set.add(batchId);
+    }
+    onSelectedImportBatchIdsChange?.([...set]);
+  };
 
   const formInner = (
     <>
@@ -117,6 +154,26 @@ export function CampaignFormUI({
           />
         </div>
         <div className="min-w-0 space-y-1">
+          <Label className={LABEL_GAP}>{requiredLabel("Filas")}</Label>
+          <Select
+            value={queueId || CAMPAIGN_INTEGRATION_NONE}
+            onValueChange={(v) => onQueueIdChange?.(v)}
+            disabled={disabled || !selectedIntegration}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={CAMPAIGN_INTEGRATION_NONE}>Sem fila</SelectItem>
+              {availableQueues.map((q) => (
+                <SelectItem key={q.id} value={q.id}>
+                  {q.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-0 space-y-1">
           <Label className={LABEL_GAP}>{requiredLabel("Integração")}</Label>
           <Select value={selectValue} onValueChange={onIntegrationChange} disabled={disabled}>
             <SelectTrigger className="w-full">
@@ -137,44 +194,76 @@ export function CampaignFormUI({
             </SelectContent>
           </Select>
         </div>
-        <div className="min-w-0 space-y-1">
-          <Label htmlFor="campaign-leads-display" className={LABEL_GAP}>
-            Leads
-          </Label>
-          <Input
-            id="campaign-leads-display"
-            readOnly
-            value={leadsDisplay}
-            className="bg-muted/40 text-muted-foreground"
-            tabIndex={-1}
-            aria-readonly
-          />
-          {!isEdit ? (
-            <p className="text-xs text-muted-foreground">
-              Associe leads depois, com &quot;Sincronizar&quot; na lista de campanhas.
-            </p>
-          ) : null}
-        </div>
+        {isEdit ? (
+          <div className="min-w-0 space-y-1">
+            <Label htmlFor="campaign-leads-display" className={LABEL_GAP}>
+              Leads
+            </Label>
+            <Input
+              id="campaign-leads-display"
+              readOnly
+              value={leadsDisplay}
+              className="bg-muted/40 text-muted-foreground"
+              tabIndex={-1}
+              aria-readonly
+            />
+          </div>
+        ) : null}
         {!isEdit ? (
           <div className="min-w-0 space-y-1">
             <Label className={LABEL_GAP}>Lote de leads (opcional)</Label>
-            <Select
-              value={selectedImportBatchId}
-              onValueChange={(v) => onSelectedImportBatchIdChange?.(v)}
-              disabled={disabled}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={CAMPAIGN_INTEGRATION_NONE}>Sem lote</SelectItem>
-                {importBatches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.fileName} ({b.importedCount})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={batchesPopoverOpen} onOpenChange={setBatchesPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={batchesPopoverOpen}
+                  disabled={disabled}
+                  className={cn(
+                    popoverFieldTriggerClassName,
+                    "h-auto min-h-10 w-full justify-between px-3 py-2 font-normal"
+                  )}
+                >
+                  <span className="line-clamp-2 text-left text-sm">{selectedBatchesSummary}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar lote..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum lote disponível.</CommandEmpty>
+                    <CommandGroup>
+                      {importBatches.map((b) => {
+                        const selected = selectedImportBatchIds.includes(b.id);
+                        return (
+                          <CommandItem
+                            key={b.id}
+                            value={`${b.fileName} ${b.importedCount - b.removedCount}`}
+                            onSelect={() => toggleBatch(b.id)}
+                            onPointerDown={(e) => e.preventDefault()}
+                          >
+                            <span
+                              className={cn(
+                                "mr-2 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                                selected
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-muted-foreground/50 bg-background"
+                              )}
+                              aria-hidden
+                            >
+                              {selected ? <Check className="h-3 w-3" strokeWidth={2.5} /> : null}
+                            </span>
+                            {b.fileName} ({b.importedCount - b.removedCount})
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         ) : null}
         {isEdit ? (

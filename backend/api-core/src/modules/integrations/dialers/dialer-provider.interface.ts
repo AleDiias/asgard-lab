@@ -1,22 +1,35 @@
-/**
- * Contrato genérico para discadores parceiros (Vonix, Aspect, 3C, etc.).
- * O CRM orquestra; a discagem ocorre no sistema externo.
- */
-export interface DialerCampaignCreateInput {
+export interface VonixQueueRecord {
+  id: string;
   name: string;
+  description?: string | null;
 }
 
 export interface DialerLeadPayload {
-  leadId: string;
+  contactId: string;
   phone: string;
   name: string;
 }
 
+export interface DialerIntegrationConfig {
+  baseUrl: string;
+  apiKey: string;
+}
+
 export interface DialerProvider {
-  createCampaign(data: DialerCampaignCreateInput): Promise<{ externalCampaignId: string }>;
-  sendLeads(
-    externalCampaignId: string,
-    leads: DialerLeadPayload[]
-  ): Promise<{ externalLeadIdsByLeadId: Record<string, string> }>;
-  pauseCampaign(externalCampaignId: string): Promise<void>;
+  fetchQueues(config: DialerIntegrationConfig): Promise<VonixQueueRecord[]>;
+  fetchResults(config: DialerIntegrationConfig): Promise<Array<Record<string, unknown>>>;
+  addSingleContact(
+    config: DialerIntegrationConfig,
+    contactId: string,
+    name: string,
+    queueId: string,
+    phone: string
+  ): Promise<void>;
+  removeSingleContact(config: DialerIntegrationConfig, contactId: string): Promise<void>;
+  addBulkContacts(
+    config: DialerIntegrationConfig,
+    queueId: string,
+    contacts: DialerLeadPayload[]
+  ): Promise<void>;
+  removeBulkContacts(config: DialerIntegrationConfig, queueId: string): Promise<void>;
 }

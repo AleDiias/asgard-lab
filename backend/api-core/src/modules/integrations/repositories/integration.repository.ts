@@ -11,7 +11,9 @@ export interface IntegrationRepository {
     patch: {
       name?: string;
       isActive?: boolean;
+      baseUrl?: string;
       credentials?: Record<string, unknown>;
+      queues?: Array<{ id: string; name: string; description?: string | null }>;
       updatedAt?: Date;
     }
   ): Promise<IntegrationRow | null>;

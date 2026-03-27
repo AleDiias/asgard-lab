@@ -45,7 +45,7 @@ export class CampaignRepositoryDrizzle implements CampaignRepository {
     db: TenantDb,
     id: string,
     patch: Partial<
-      Pick<CampaignRow, "name" | "status" | "externalCampaignId" | "integrationId">
+      Pick<CampaignRow, "name" | "status" | "externalCampaignId" | "integrationId" | "queueId">
     > & {
       updatedAt?: Date;
     }

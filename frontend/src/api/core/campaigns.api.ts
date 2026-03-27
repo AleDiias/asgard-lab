@@ -30,6 +30,7 @@ export async function updateCampaignFn(
   body: {
     name?: string;
     integrationId?: string | null;
+    queueId?: string | null;
     status?: CampaignStatus;
   }
 ): Promise<CampaignRecord> {
@@ -43,6 +44,7 @@ export async function updateCampaignFn(
 export async function createCampaignFn(body: {
   name: string;
   integrationId?: string | null;
+  queueId?: string | null;
 }): Promise<CampaignRecord> {
   const { data } = await coreApiClient.post<
     { success: true; data: CampaignRecord } | { success: false; error: { message: string } }
@@ -53,7 +55,7 @@ export async function createCampaignFn(body: {
 
 export async function syncCampaignLeadsFn(
   campaignId: string,
-  body: { leadIds?: string[]; importBatchId?: string }
+  body: { leadIds?: string[]; importBatchId?: string; importBatchIds?: string[] }
 ): Promise<{ campaignId: string; syncedCount: number; status: string }> {
   const { data } = await coreApiClient.post<
     | { success: true; data: { campaignId: string; syncedCount: number; status: string } }

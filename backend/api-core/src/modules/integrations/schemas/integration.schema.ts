@@ -5,9 +5,9 @@ export const dialerProviderSchema = z.enum(["vonix", "aspect", "3c", "custom"]);
 export const integrationCreateBodySchema = z.object({
   provider: dialerProviderSchema,
   name: z.string().min(1, "Nome é obrigatório.").max(255),
+  baseUrl: z.string().url("URL base inválida.").max(2048),
   credentials: z.object({
     apiKey: z.string().min(1, "API Key é obrigatória."),
-    baseUrl: z.string().min(1, "URL base é obrigatória.").max(2048),
   }),
   isActive: z.boolean().optional(),
 });
@@ -22,14 +22,14 @@ export const integrationUpdateBodySchema = z
   .object({
     name: z.string().min(1, "Nome é obrigatório.").max(255).optional(),
     isActive: z.boolean().optional(),
+    baseUrl: z.string().url("URL base inválida.").max(2048).optional(),
     credentials: z
       .object({
         apiKey: z.string().min(1, "API Key é obrigatória."),
-        baseUrl: z.string().min(1, "URL base é obrigatória.").max(2048),
       })
       .optional(),
   })
-  .refine((b) => b.name !== undefined || b.isActive !== undefined || b.credentials !== undefined, {
+  .refine((b) => b.name !== undefined || b.isActive !== undefined || b.baseUrl !== undefined || b.credentials !== undefined, {
     message: "Nada a atualizar.",
   });
 

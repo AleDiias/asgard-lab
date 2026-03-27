@@ -74,7 +74,8 @@ export default function IntegrationEditPage() {
         toast.error("Para alterar credenciais, preencha API Key e URL base.");
         return;
       }
-      body.credentials = { apiKey: k, baseUrl: u };
+      body.baseUrl = u;
+      body.credentials = { apiKey: k };
     }
     updateMutation.mutate(body);
   }, [apiKey, baseUrl, isActive, name, updateMutation]);
