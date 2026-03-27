@@ -26,6 +26,22 @@ services:
       retries: 12
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: asgardlab-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - asgardlab_redis_data:/data
+    networks:
+      - asgardlab_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
   api-auth:
     build:
       context: ..
@@ -53,6 +69,8 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     env_file:
       - .env
@@ -87,3 +105,4 @@ networks:
 
 volumes:
   asgardlab_pg_data:
+  asgardlab_redis_data:

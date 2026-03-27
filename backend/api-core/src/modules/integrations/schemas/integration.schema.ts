@@ -5,11 +5,15 @@ export const dialerProviderSchema = z.enum(["vonix", "aspect", "3c", "custom"]);
 export const integrationCreateBodySchema = z.object({
   provider: dialerProviderSchema,
   name: z.string().min(1, "Nome é obrigatório.").max(255),
-  baseUrl: z.string().url("URL base inválida.").max(2048),
+  baseUrl: z.string().url("URL base inválida.").max(2048).optional(),
   credentials: z.object({
     apiKey: z.string().min(1, "API Key é obrigatória."),
+    baseUrl: z.string().url("URL base inválida.").max(2048).optional(),
   }),
   isActive: z.boolean().optional(),
+}).refine((b) => Boolean(b.baseUrl ?? b.credentials.baseUrl), {
+  message: "URL base é obrigatória.",
+  path: ["baseUrl"],
 });
 
 export type IntegrationCreateBody = z.infer<typeof integrationCreateBodySchema>;
@@ -26,6 +30,7 @@ export const integrationUpdateBodySchema = z
     credentials: z
       .object({
         apiKey: z.string().min(1, "API Key é obrigatória."),
+        baseUrl: z.string().url("URL base inválida.").max(2048).optional(),
       })
       .optional(),
   })

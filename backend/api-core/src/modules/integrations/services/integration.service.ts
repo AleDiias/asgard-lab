@@ -1,4 +1,4 @@
-import { NotFoundError } from "@/errors/app-error.js";
+import { BadRequestError, NotFoundError } from "@/errors/app-error.js";
 import type { TenantDb } from "@/infra/database/tenant/connection-manager.js";
 import { getDialerAdapter } from "../dialers/dialer-factory.js";
 import type { IntegrationCreateBody, IntegrationUpdateBody } from "../schemas/integration.schema.js";
@@ -41,15 +41,19 @@ export class IntegrationService {
   constructor(private readonly integrationRepo: IntegrationRepository) {}
 
   async create(db: TenantDb, body: IntegrationCreateBody): Promise<IntegrationPublic> {
+    const resolvedBaseUrl = body.baseUrl ?? body.credentials.baseUrl;
+    if (!resolvedBaseUrl) {
+      throw new BadRequestError("URL base é obrigatória.");
+    }
     const adapter = getDialerAdapter(body.provider);
     const queues = await adapter.fetchQueues({
-      baseUrl: body.baseUrl,
+      baseUrl: resolvedBaseUrl,
       apiKey: body.credentials.apiKey,
     });
     const row = await this.integrationRepo.create(db, {
       provider: body.provider,
       name: body.name,
-      baseUrl: body.baseUrl,
+      baseUrl: resolvedBaseUrl,
       credentials: body.credentials as unknown as Record<string, unknown>,
       queues,
       isActive: body.isActive ?? true,
@@ -75,7 +79,7 @@ export class IntegrationService {
       body.credentials !== undefined
         ? { ...prevCreds, ...body.credentials }
         : undefined;
-    const nextBaseUrl = body.baseUrl ?? existing.baseUrl;
+    const nextBaseUrl = body.baseUrl ?? body.credentials?.baseUrl ?? existing.baseUrl;
     let queues = undefined as Array<{ id: string; name: string; description?: string | null }> | undefined;
     if (body.baseUrl !== undefined || body.credentials !== undefined) {
       const adapter = getDialerAdapter(existing.provider);
